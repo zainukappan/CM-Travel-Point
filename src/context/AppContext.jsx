@@ -623,12 +623,14 @@ export const AppProvider = ({ children }) => {
   };
 
   const addExpense = (expenseData) => {
+    const isIncome = expenseData.type === 'income';
     const newExp = {
-      id: `EXP-${Date.now().toString().slice(-3)}`,
+      id: `${isIncome ? 'INC' : 'EXP'}-${Date.now().toString().slice(-3)}`,
       category: expenseData.category,
       amount: Number(expenseData.amount),
       date: expenseData.date || new Date().toISOString().split('T')[0],
-      description: expenseData.description
+      description: expenseData.description,
+      type: expenseData.type || 'expense'
     };
     setExpenses(prev => [newExp, ...prev]);
   };

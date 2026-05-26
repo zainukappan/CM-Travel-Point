@@ -4,9 +4,10 @@ import { AppContext } from '../../context/AppContext';
 export default function Expenses() {
   const { role, expenses, addExpense } = useContext(AppContext);
 
-  // States
+  // States for Modal
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newExp, setNewExp] = useState({
+    type: 'expense', // 'expense' | 'income'
     category: 'Rent',
     amount: 0,
     description: '',
@@ -15,30 +16,39 @@ export default function Expenses() {
 
   // Filter States
   const [categoryFilter, setCategoryFilter] = useState('All');
-  const [filterType, setFilterType] = useState('All'); // 'All' | 'Month' | 'Custom'
+  const [txnTypeFilter, setTxnTypeFilter] = useState('All'); // 'All' | 'expense' | 'income'
+  const [dateFilterType, setDateFilterType] = useState('All'); // 'All' | 'Month' | 'Custom'
   const [selectedMonth, setSelectedMonth] = useState('2026-05');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Filter expenses list on-the-fly
+  // Filter cash flow list on-the-fly
   const filteredExpenses = expenses.filter(exp => {
+    // Category match
     const matchesCategory = categoryFilter === 'All' || exp.category === categoryFilter;
 
+    // Type match
+    const itemType = exp.type || 'expense';
+    const matchesTxnType = txnTypeFilter === 'All' || itemType === txnTypeFilter;
+
+    // Date match
     const date = exp.date || '';
     let matchesDate = true;
-    if (filterType === 'Month') {
+    if (dateFilterType === 'Month') {
       matchesDate = date.startsWith(selectedMonth);
-    } else if (filterType === 'Custom') {
+    } else if (dateFilterType === 'Custom') {
       matchesDate = (!startDate || date >= startDate) && (!endDate || date <= endDate);
     }
 
-    return matchesCategory && matchesDate;
+    return matchesCategory && matchesTxnType && matchesDate;
   });
 
-  // Calculate total expense overhead on the filtered list
-  const totalExpenseVal = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  // Calculate total expense & income overheads
+  const totalExpenseVal = filteredExpenses.filter(e => (e.type || 'expense') === 'expense').reduce((sum, e) => sum + e.amount, 0);
+  const totalIncomeVal = filteredExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+  const netOverheadVal = totalIncomeVal - totalExpenseVal;
 
-  // Helper formatting
+  // Helper currency formatting
   const formatCurr = (val) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -51,7 +61,7 @@ export default function Expenses() {
   const handleAddSubmit = (e) => {
     e.preventDefault();
     if (newExp.amount <= 0 || !newExp.description) {
-      alert('Please fill out all expense fields.');
+      alert('Please fill out all cash flow fields.');
       return;
     }
 
@@ -59,6 +69,7 @@ export default function Expenses() {
     
     // Reset local modal state
     setNewExp({
+      type: 'expense',
       category: 'Rent',
       amount: 0,
       description: '',
@@ -67,7 +78,16 @@ export default function Expenses() {
     setIsAddOpen(false);
   };
 
-  // 1. Double check RBAC safety
+  // Adjust categories when type changes
+  const handleTypeChange = (typeVal) => {
+    setNewExp(prev => ({
+      ...prev,
+      type: typeVal,
+      category: typeVal === 'income' ? 'Service Fees' : 'Rent'
+    }));
+  };
+
+  // Double check RBAC safety
   if (role !== 'admin') {
     return (
       <div className="restricted-panel" style={{ marginTop: '40px' }}>
@@ -91,30 +111,67 @@ export default function Expenses() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* Top Card */}
+      {/* Top Card / P&L Balance Cards */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+        
+        {/* Total Income */}
+        <div className="card" style={{ flex: '1 1 30%', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: '600' }}>
+            Total Logging Incomes
+          </span>
+          <span style={{ fontSize: '24px', fontWeight: '800', color: '#22c55e' }}>{formatCurr(totalIncomeVal)}</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Ticket markups, Attestation & consultation fees</span>
+        </div>
+
+        {/* Total Expenses */}
+        <div className="card" style={{ flex: '1 1 30%', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: '600' }}>
+            Total Logging Expenses
+          </span>
+          <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--danger)' }}>{formatCurr(totalExpenseVal)}</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Salaries, space rent, power bills & marketing</span>
+        </div>
+
+        {/* Net Flow Balance */}
+        <div className="card" style={{ 
+          flex: '1 1 30%', 
+          padding: '16px 20px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '4px',
+          background: netOverheadVal >= 0 ? 'rgba(34, 197, 94, 0.04)' : 'rgba(239, 68, 68, 0.04)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: '600' }}>
+              Logging Operational Net
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: netOverheadVal >= 0 ? '#22c55e' : 'var(--danger)' }}>
+              {netOverheadVal >= 0 ? 'SURPLUS' : 'DEFICIT'}
+            </span>
+          </div>
+          <span style={{ fontSize: '24px', fontWeight: '800', color: netOverheadVal >= 0 ? '#22c55e' : 'var(--danger)' }}>
+            {formatCurr(netOverheadVal)}
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Difference between logs during active timeframe</span>
+        </div>
+
+      </div>
+
+      {/* Action Header card */}
       <div className="card" style={{ padding: '16px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: '600' }}>Office Administrative Expense Ledger</h2>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Monitor and log monthly operational overheads</span>
+            <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>Office Administrative Cash Flow Ledger</h2>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Record and manage administrative overheads and misc transaction inflows</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase' }}>
-                {categoryFilter !== 'All' || filterType !== 'All' ? 'Filtered Overhead' : 'Total Operating Overhead'}
-              </span>
-              <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--danger)' }}>{formatCurr(totalExpenseVal)}</span>
-            </div>
-
-            <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
-              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>Record Expense</span>
-            </button>
-          </div>
+          <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Record Cash Flow</span>
+          </button>
         </div>
       </div>
 
@@ -122,35 +179,56 @@ export default function Expenses() {
       <div className="card no-print" style={{ padding: '16px 24px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>Filter Overhead Statements:</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>Filter Statements:</span>
           </div>
           
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            
+            {/* Type selector */}
+            <select
+              className="form-select"
+              value={txnTypeFilter}
+              onChange={(e) => setTxnTypeFilter(e.target.value)}
+            >
+              <option value="All">All Inflows & Outflows</option>
+              <option value="income">Incomes (Inflow)</option>
+              <option value="expense">Expenses (Outflow)</option>
+            </select>
+
+            {/* Category selector */}
             <select
               className="form-select"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
               <option value="All">All Categories</option>
+              {/* Expense Categories */}
               <option value="Rent">Rent & Lease</option>
               <option value="Salaries">Staff Salaries</option>
               <option value="Utilities">Office Utilities & Power</option>
               <option value="Marketing">Marketing & Promotions</option>
               <option value="Software">API & GDS Software Seats</option>
-              <option value="Other">Other Miscellaneous</option>
+              {/* Income Categories */}
+              <option value="Ticket Markups">Ticket Markups</option>
+              <option value="Visa Commissions">Visa Commissions</option>
+              <option value="Tour Commissions">Tour Package Commissions</option>
+              <option value="Service Fees">Service / Consultation Fees</option>
+              <option value="Attestation Charges">Attestation Services</option>
+              <option value="Other">Other Misc Overhead</option>
             </select>
 
+            {/* Date interval type */}
             <select
               className="form-select"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
+              value={dateFilterType}
+              onChange={(e) => setDateFilterType(e.target.value)}
             >
               <option value="All">All Dates</option>
               <option value="Month">Month-wise</option>
               <option value="Custom">Custom Range</option>
             </select>
 
-            {filterType === 'Month' && (
+            {dateFilterType === 'Month' && (
               <input 
                 type="month"
                 className="form-input"
@@ -160,7 +238,7 @@ export default function Expenses() {
               />
             )}
 
-            {filterType === 'Custom' && (
+            {dateFilterType === 'Custom' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input 
                   type="date"
@@ -193,42 +271,63 @@ export default function Expenses() {
               <tr>
                 <th>Receipt ID</th>
                 <th>Date</th>
+                <th>Flow Type</th>
                 <th>Category</th>
-                <th>Expense Memo Description</th>
-                <th style={{ textAlign: 'right' }}>Debit Amount</th>
+                <th>Memo Description</th>
+                <th style={{ textAlign: 'right' }}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {filteredExpenses.length > 0 ? (
                 filteredExpenses
                   .sort((a,b) => new Date(b.date) - new Date(a.date))
-                  .map(exp => (
-                    <tr key={exp.id}>
-                      <td style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{exp.id}</td>
-                      <td>{exp.date}</td>
-                      <td>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                          color: 'var(--danger)',
-                          textTransform: 'uppercase'
+                  .map(exp => {
+                    const isIncome = exp.type === 'income';
+                    return (
+                      <tr key={exp.id}>
+                        <td style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{exp.id}</td>
+                        <td>{exp.date}</td>
+                        {/* Flow direction indicator */}
+                        <td>
+                          <span style={{ 
+                            fontSize: '11px', 
+                            fontWeight: '700',
+                            color: isIncome ? '#22c55e' : 'var(--danger)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            {isIncome ? 'INFLOW' : 'OUTFLOW'}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: isIncome ? 'rgba(34, 197, 94, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                            color: isIncome ? '#22c55e' : 'var(--danger)',
+                            textTransform: 'uppercase'
+                          }}>
+                            {exp.category}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: '500' }}>{exp.description}</td>
+                        <td style={{ 
+                          textAlign: 'right', 
+                          fontWeight: '700', 
+                          color: isIncome ? '#22c55e' : 'var(--danger)' 
                         }}>
-                          {exp.category}
-                        </span>
-                      </td>
-                      <td style={{ fontWeight: '500' }}>{exp.description}</td>
-                      <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--danger)' }}>
-                        {formatCurr(exp.amount)}
-                      </td>
-                    </tr>
-                  ))
+                          {isIncome ? '+' : '-'}{formatCurr(exp.amount)}
+                        </td>
+                      </tr>
+                    );
+                  })
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                    No administrative expenses logged for this period.
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                    No cash flows logged for this period.
                   </td>
                 </tr>
               )}
@@ -237,46 +336,99 @@ export default function Expenses() {
         </div>
       </div>
 
-      {/* MODAL: Record Expense Form */}
+      {/* MODAL: Record Flow Form */}
       {isAddOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h2>Record Administrative Expense</h2>
+              <h2>Record Administrative Cash Flow</h2>
               <button className="modal-close-btn" onClick={() => setIsAddOpen(false)}>✕</button>
             </div>
 
             <form onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
+              {/* Type Select */}
               <div className="form-group">
-                <label>Expense Category</label>
-                <select
-                  className="form-select"
-                  value={newExp.category}
-                  onChange={(e) => setNewExp(prev => ({ ...prev, category: e.target.value }))}
-                >
-                  <option value="Rent">Rent & Lease</option>
-                  <option value="Salaries">Staff Salaries</option>
-                  <option value="Utilities">Office Utilities & Power</option>
-                  <option value="Marketing">Marketing & Promotions</option>
-                  <option value="Software">API & GDS Software Seats</option>
-                  <option value="Other">Other Miscellaneous</option>
-                </select>
+                <label>Flow Direction Type</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    type="button" 
+                    className="btn" 
+                    style={{ 
+                      flex: 1, 
+                      backgroundColor: newExp.type === 'expense' ? 'var(--danger)' : 'rgba(255,255,255,0.04)',
+                      color: newExp.type === 'expense' ? 'white' : 'var(--text-muted)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      fontWeight: '600'
+                    }}
+                    onClick={() => handleTypeChange('expense')}
+                  >
+                    Expense (Outflow)
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn" 
+                    style={{ 
+                      flex: 1, 
+                      backgroundColor: newExp.type === 'income' ? '#22c55e' : 'rgba(255,255,255,0.04)',
+                      color: newExp.type === 'income' ? 'white' : 'var(--text-muted)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      fontWeight: '600'
+                    }}
+                    onClick={() => handleTypeChange('income')}
+                  >
+                    Income (Inflow)
+                  </button>
+                </div>
               </div>
 
+              {/* Dynamic Category Selector */}
               <div className="form-group">
-                <label>Expense Cost Amount (₹)</label>
+                <label>Flow Category</label>
+                {newExp.type === 'expense' ? (
+                  <select
+                    className="form-select"
+                    value={newExp.category}
+                    onChange={(e) => setNewExp(prev => ({ ...prev, category: e.target.value }))}
+                  >
+                    <option value="Rent">Rent & Lease</option>
+                    <option value="Salaries">Staff Salaries</option>
+                    <option value="Utilities">Office Utilities & Power</option>
+                    <option value="Marketing">Marketing & Promotions</option>
+                    <option value="Software">API & GDS Software Seats</option>
+                    <option value="Other">Other Miscellaneous Overhead</option>
+                  </select>
+                ) : (
+                  <select
+                    className="form-select"
+                    value={newExp.category}
+                    onChange={(e) => setNewExp(prev => ({ ...prev, category: e.target.value }))}
+                  >
+                    <option value="Service Fees">Service / Consultation Fees</option>
+                    <option value="Ticket Markups">Ticket Markups</option>
+                    <option value="Visa Commissions">Visa Commissions</option>
+                    <option value="Tour Commissions">Tour Package Commissions</option>
+                    <option value="Attestation Charges">Attestation Services</option>
+                    <option value="Other">Other Misc Income</option>
+                  </select>
+                )}
+              </div>
+
+              {/* Amount Field */}
+              <div className="form-group">
+                <label>Amount (₹)</label>
                 <input
                   type="number"
                   className="form-input"
                   required
                   min="1"
                   value={newExp.amount || ''}
-                  placeholder="e.g. 150"
+                  placeholder="e.g. 1500"
                   onChange={(e) => setNewExp(prev => ({ ...prev, amount: Number(e.target.value) }))}
                 />
               </div>
 
+              {/* Date Field */}
               <div className="form-group">
                 <label>Remittance Date</label>
                 <input
@@ -288,13 +440,14 @@ export default function Expenses() {
                 />
               </div>
 
+              {/* Memo Description */}
               <div className="form-group">
                 <label>Ledger Memo Description</label>
                 <input
                   type="text"
                   className="form-input"
                   required
-                  placeholder="e.g. Monthly high-speed internet"
+                  placeholder={newExp.type === 'income' ? 'e.g. Markup on Schengen visa ticket' : 'e.g. Monthly space rent'}
                   value={newExp.description}
                   onChange={(e) => setNewExp(prev => ({ ...prev, description: e.target.value }))}
                 />
@@ -302,7 +455,9 @@ export default function Expenses() {
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsAddOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Process Debit</button>
+                <button type="submit" className="btn btn-primary" style={{ backgroundColor: newExp.type === 'income' ? '#22c55e' : 'var(--primary)' }}>
+                  {newExp.type === 'income' ? 'Process Credit' : 'Process Debit'}
+                </button>
               </div>
 
             </form>

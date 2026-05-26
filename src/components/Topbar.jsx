@@ -11,6 +11,7 @@ export default function Topbar({ currentTab }) {
       case 'crm': return 'CRM Passenger Directory';
       case 'vendors': return 'B2B Consolidator Ledger';
       case 'expenses': return 'Office Administrative Costs';
+      case 'ledger': return 'Unified Financial Ledger & Sheets Integration';
       case 'security': return 'Staff & Security Portal';
       default: return 'CM Travel Point';
     }
