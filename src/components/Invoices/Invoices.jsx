@@ -392,6 +392,18 @@ export default function Invoices() {
                         >
                           💬
                         </button>
+                        <button
+                          className="btn btn-danger"
+                          style={{ padding: '6px 10px', fontSize: '12px' }}
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete invoice ${inv.id} for ${inv.customerName}? This will permanently remove it from the system.`)) {
+                              deleteInvoice(inv.id);
+                            }
+                          }}
+                          title="Permanently delete this invoice"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
