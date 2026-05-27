@@ -196,7 +196,21 @@ export const AppProvider = ({ children }) => {
     const serviceCharge = Number(invoiceData.serviceCharge || 0);
     const taxGst = Number(invoiceData.taxGst || 0);
     const totalAmount = baseFare + serviceCharge + taxGst;
-    const paidAmount = Number(invoiceData.initialPayment || 0);
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    let paymentsList = invoiceData.paymentsList || [];
+    if (!invoiceData.paymentsList && Number(invoiceData.initialPayment || 0) > 0) {
+      paymentsList = [{
+        amount: Number(invoiceData.initialPayment),
+        date: invoiceData.createdDate || new Date().toISOString().split('T')[0],
+        paymentMethod: invoiceData.paymentMethod || 'Cash',
+        reference: invoiceData.paymentReference || 'Initial Invoice Dep'
+      }];
+    }
+    
+    const paidAmount = paymentsList
+      .filter(p => p.date <= todayStr)
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
     
     let status = 'pending';
     if (paidAmount >= totalAmount) {
@@ -290,23 +304,25 @@ export const AppProvider = ({ children }) => {
       paidAmount,
       status,
       vendorId: invoiceData.vendorId,
-      createdDate: new Date().toISOString().split('T')[0]
+      createdDate: invoiceData.createdDate || new Date().toISOString().split('T')[0]
     };
 
     setInvoices(prev => [newInvoice, ...prev]);
 
     // Relational Side Effects:
-    // 1. Create a Payment ledger row if initial payment was logged
-    if (paidAmount > 0) {
-      const newPay = {
-        id: `PAY-${Date.now().toString().slice(-3)}`,
-        invoiceId: invId,
-        amount: paidAmount,
-        date: new Date().toISOString().split('T')[0],
-        paymentMethod: invoiceData.paymentMethod || 'Cash',
-        reference: invoiceData.paymentReference || 'Initial Invoice Dep'
-      };
-      setPayments(prev => [newPay, ...prev]);
+    // 1. Create payment ledger rows for each item in paymentsList
+    if (paymentsList.length > 0) {
+      const newPays = paymentsList
+        .filter(p => Number(p.amount || 0) > 0)
+        .map((p, idx) => ({
+          id: p.id || `PAY-${Date.now().toString().slice(-3)}-${idx}`,
+          invoiceId: invId,
+          amount: Number(p.amount),
+          date: p.date,
+          paymentMethod: p.paymentMethod || 'Cash',
+          reference: p.reference || (idx === 0 ? 'Initial Deposit' : 'Future Due Clearance')
+        }));
+      setPayments(prev => [...newPays, ...prev]);
     }
 
     // 2. Log B2B Ticket Debit in the specified Vendor ledger
@@ -409,6 +425,24 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateInvoice = (id, updatedData) => {
+    // Cascade updates to global payments array if paymentsList is passed
+    if (updatedData.paymentsList) {
+      setPayments(prev => {
+        const filtered = prev.filter(p => p.invoiceId !== id);
+        const newPayments = updatedData.paymentsList
+          .filter(p => Number(p.amount || 0) > 0)
+          .map((p, idx) => ({
+            id: p.id || `PAY-${Date.now().toString().slice(-3)}-${idx}`,
+            invoiceId: id,
+            amount: Number(p.amount),
+            date: p.date,
+            paymentMethod: p.paymentMethod || 'Cash',
+            reference: p.reference || (idx === 0 ? 'Initial Deposit' : 'Future Due Clearance')
+          }));
+        return [...newPayments, ...filtered];
+      });
+    }
+
     // Check if customerId is specified, if not, auto-create a walk-in guest in CRM
     let finalCustomerId = updatedData.customerId;
     let finalCustomerName = updatedData.customerName;
@@ -482,7 +516,12 @@ export const AppProvider = ({ children }) => {
         const serviceCharge = Number(merged.serviceCharge || 0);
         const taxGst = Number(merged.taxGst || 0);
         const totalAmount = baseFare + serviceCharge + taxGst;
-        const paidAmount = Number(merged.paidAmount || 0);
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const paymentsList = merged.paymentsList || [];
+        const paidAmount = paymentsList.length > 0
+          ? paymentsList.filter(p => p.date <= todayStr).reduce((sum, p) => sum + Number(p.amount || 0), 0)
+          : Number(merged.paidAmount || 0);
         
         let status = 'pending';
         if (paidAmount >= totalAmount) {
@@ -497,6 +536,7 @@ export const AppProvider = ({ children }) => {
           serviceCharge,
           taxGst,
           totalAmount,
+          paidAmount,
           status
         };
       }
