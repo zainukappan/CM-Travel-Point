@@ -404,6 +404,10 @@ export const AppProvider = ({ children }) => {
     setExpenses(prev => [newExp, ...prev]);
   };
 
+  const deleteExpense = (id) => {
+    setExpenses(prev => prev.filter(exp => exp.id !== id));
+  };
+
   const updateInvoice = (id, updatedData) => {
     // Check if customerId is specified, if not, auto-create a walk-in guest in CRM
     let finalCustomerId = updatedData.customerId;
@@ -719,6 +723,7 @@ export const AppProvider = ({ children }) => {
       deleteVendor,
       addVendorDeposit,
       addExpense,
+      deleteExpense,
       getFinancialStats,
       updateUser,
       resetDatabase

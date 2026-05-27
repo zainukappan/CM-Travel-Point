@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 
 export default function Expenses() {
-  const { role, expenses, addExpense } = useContext(AppContext);
+  const { role, expenses, addExpense, deleteExpense } = useContext(AppContext);
 
   // States for Modal
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -275,6 +275,7 @@ export default function Expenses() {
                 <th>Category</th>
                 <th>Memo Description</th>
                 <th style={{ textAlign: 'right' }}>Amount</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -321,12 +322,26 @@ export default function Expenses() {
                         }}>
                           {isIncome ? '+' : '-'}{formatCurr(exp.amount)}
                         </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn btn-danger"
+                            style={{ padding: '4px 8px', fontSize: '11px', height: '24px' }}
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete cash flow record ${exp.id} (${exp.category}: ${exp.description})? This will permanently remove it.`)) {
+                                deleteExpense(exp.id);
+                              }
+                            }}
+                            title="Delete this transaction log"
+                          >
+                            Delete
+                          </button>
+                        </td>
                       </tr>
                     );
                   })
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                     No cash flows logged for this period.
                   </td>
                 </tr>
