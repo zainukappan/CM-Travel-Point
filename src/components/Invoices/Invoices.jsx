@@ -3,7 +3,7 @@ import { AppContext } from '../../context/AppContext';
 import { LogoSVG } from '../Sidebar';
 
 export default function Invoices() {
-  const { invoices, customers, vendors, airlines, clients, addInvoice, addPayment, updateInvoice, deleteInvoice, addAirline } = useContext(AppContext);
+  const { invoices, payments, customers, vendors, airlines, clients, addInvoice, addPayment, updateInvoice, deleteInvoice, addAirline } = useContext(AppContext);
 
   // Filter and Search States
   const [search, setSearch] = useState('');
