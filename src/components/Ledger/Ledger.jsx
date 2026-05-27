@@ -92,17 +92,36 @@ export default function Ledger() {
       if (selectedCustomerId !== 'All' && inv.customerId !== selectedCustomerId) return;
       if (selectedClientId !== 'All' && inv.coId !== selectedClientId) return;
 
+      const additionalAmount = Number(inv.additionalAmount || 0);
+      const hasAdditional = additionalAmount > 0 && inv.additionalAmountDate;
+
+      // 1. Base Invoice Charge (Invoices are Debit Charges to the customer's statement ledger, hence 'outflow'!)
       list.push({
         id: inv.id,
         date: inv.createdDate || inv.travelDate,
         type: 'Invoice Billed',
         category: 'Sales Invoice',
-        reference: `${inv.customerName} (${inv.travelType} PNR: ${inv.pnr || 'N/A'})`,
-        amount: inv.totalAmount,
-        flow: 'inflow',
+        reference: `${inv.customerName} (${inv.travelType} PNR: ${inv.pnr || 'N/A'})${hasAdditional ? ' - Base Charge' : ''}`,
+        amount: hasAdditional ? (inv.totalAmount - additionalAmount) : inv.totalAmount,
+        flow: 'outflow', // Mapped as outflow (Debit) to avoid cash double-counting
         status: inv.status,
         docNo: inv.ticketNo || 'N/A'
       });
+
+      // 2. Subsequent Additional Charge compiled on its specific addition date
+      if (hasAdditional) {
+        list.push({
+          id: `${inv.id}-ADD`,
+          date: inv.additionalAmountDate,
+          type: 'Invoice Billed',
+          category: 'Sales Invoice',
+          reference: `${inv.customerName} - Additional Charge Added`,
+          amount: additionalAmount,
+          flow: 'outflow', // Also a Debit charge!
+          status: inv.status,
+          docNo: inv.ticketNo || 'N/A'
+        });
+      }
     });
 
     // Payments Received (Actual Liquid Cash Inflow)

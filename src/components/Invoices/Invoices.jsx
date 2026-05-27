@@ -18,6 +18,19 @@ export default function Invoices() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(null);
 
+  // Sorting States
+  const [sortField, setSortField] = useState('createdDate'); // default sorting by Invoice Date
+  const [sortDirection, setSortDirection] = useState('desc'); // default descending (newest first)
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   // Form Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newInvoice, setNewInvoice] = useState({
@@ -36,6 +49,8 @@ export default function Invoices() {
     baseFare: 0,
     serviceCharge: 0,
     taxGst: 0,
+    additionalAmount: 0,
+    additionalAmountDate: new Date().toISOString().split('T')[0],
     initialPayment: 0,
     paymentMethod: 'Cash',
     paymentReference: '',
@@ -53,7 +68,7 @@ export default function Invoices() {
   });
 
   // Dynamic cost calculations for form
-  const computedTotal = Number(newInvoice.baseFare || 0) + Number(newInvoice.serviceCharge || 0) + Number(newInvoice.taxGst || 0);
+  const computedTotal = Number(newInvoice.baseFare || 0) + Number(newInvoice.serviceCharge || 0) + Number(newInvoice.taxGst || 0) + Number(newInvoice.additionalAmount || 0);
 
   // Handles Search and Filter logic
   const filteredInvoices = invoices.filter(inv => {
@@ -75,6 +90,26 @@ export default function Invoices() {
     }
 
     return matchesSearch && matchesType && matchesStatus && matchesDate;
+  });
+
+  // Sort Invoices
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+    let valA = a[sortField];
+    let valB = b[sortField];
+
+    if (valA === undefined || valA === null) valA = '';
+    if (valB === undefined || valB === null) valB = '';
+
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    }
+
+    const strA = String(valA).toLowerCase();
+    const strB = String(valB).toLowerCase();
+
+    if (strA < strB) return sortDirection === 'asc' ? -1 : 1;
+    if (strA > strB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   // Format currency
@@ -329,22 +364,42 @@ export default function Invoices() {
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Invoice ID</th>
-                <th>Passenger Name</th>
-                <th>PNR / Ticket</th>
-                <th>Travel Date</th>
-                <th>Details</th>
-                <th>Invoice Cost</th>
-                <th>Paid</th>
-                <th>Status</th>
+                <th onClick={() => handleSort('id')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Invoice ID {sortField === 'id' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('createdDate')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Invoice Date {sortField === 'createdDate' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('customerName')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Passenger Name {sortField === 'customerName' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('pnr')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  PNR / Ticket {sortField === 'pnr' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('travelDate')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Travel Date {sortField === 'travelDate' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('details')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Details {sortField === 'details' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('totalAmount')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right' }}>
+                  Invoice Cost {sortField === 'totalAmount' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('paidAmount')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right' }}>
+                  Paid {sortField === 'paidAmount' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Status {sortField === 'status' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredInvoices.length > 0 ? (
-                filteredInvoices.map(inv => (
+              {sortedInvoices.length > 0 ? (
+                sortedInvoices.map(inv => (
                   <tr key={inv.id}>
                     <td style={{ fontWeight: '600', color: 'var(--primary)' }}>{inv.id}</td>
+                    <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>{inv.createdDate || inv.travelDate || 'N/A'}</td>
                     <td>{inv.customerName}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -699,6 +754,28 @@ export default function Invoices() {
                   />
                 </div>
 
+                <div className="form-group" style={{ borderLeft: '1px dashed rgba(255,255,255,0.08)', paddingLeft: '12px' }}>
+                  <label style={{ color: 'var(--primary)', fontWeight: '600' }}>Additional Amount (₹)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="0"
+                    value={newInvoice.additionalAmount || ''}
+                    placeholder="e.g. Baggage/Visa additions"
+                    onChange={(e) => setNewInvoice(prev => ({ ...prev, additionalAmount: Number(e.target.value) }))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Additional Charge Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={newInvoice.additionalAmountDate}
+                    onChange={(e) => setNewInvoice(prev => ({ ...prev, additionalAmountDate: e.target.value }))}
+                  />
+                </div>
+
                 <div className="form-group" style={{ justifyContent: 'center' }}>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>TOTAL AMOUNT</span>
                   <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--primary)' }}>
@@ -886,7 +963,17 @@ export default function Invoices() {
                 
                 <div className="invoice-print-totals">
                   <div className="print-total-row">
-                    <span>Invoice Subtotal:</span>
+                    <span>Base Fare & Fees:</span>
+                    <span>{formatCurr(Number(selectedInvoice.baseFare || 0) + Number(selectedInvoice.serviceCharge || 0) + Number(selectedInvoice.taxGst || 0))}</span>
+                  </div>
+                  {Number(selectedInvoice.additionalAmount || 0) > 0 && (
+                    <div className="print-total-row">
+                      <span>Additional Charge ({selectedInvoice.additionalAmountDate}):</span>
+                      <span>{formatCurr(selectedInvoice.additionalAmount)}</span>
+                    </div>
+                  )}
+                  <div className="print-total-row" style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: '4px', marginTop: '4px' }}>
+                    <span>Total Invoice Cost:</span>
                     <span>{formatCurr(selectedInvoice.totalAmount)}</span>
                   </div>
                   <div className="print-total-row">
@@ -1273,10 +1360,32 @@ export default function Invoices() {
                   />
                 </div>
 
+                <div className="form-group" style={{ borderLeft: '1px dashed rgba(255,255,255,0.08)', paddingLeft: '12px' }}>
+                  <label style={{ color: 'var(--primary)', fontWeight: '600' }}>Additional Amount (₹)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="0"
+                    value={editingInvoice.additionalAmount || ''}
+                    placeholder="e.g. Baggage/Visa additions"
+                    onChange={(e) => setEditingInvoice(prev => ({ ...prev, additionalAmount: Number(e.target.value) }))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Additional Charge Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={editingInvoice.additionalAmountDate || ''}
+                    onChange={(e) => setEditingInvoice(prev => ({ ...prev, additionalAmountDate: e.target.value }))}
+                  />
+                </div>
+
                 <div className="form-group" style={{ justifyContent: 'center' }}>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>TOTAL AMOUNT</span>
                   <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--primary)' }}>
-                    {formatCurr(Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0))}
+                    {formatCurr(Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0) + Number(editingInvoice.additionalAmount || 0))}
                   </span>
                 </div>
               </div>
