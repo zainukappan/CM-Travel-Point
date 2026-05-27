@@ -195,9 +195,7 @@ export const AppProvider = ({ children }) => {
     const baseFare = Number(invoiceData.baseFare || 0);
     const serviceCharge = Number(invoiceData.serviceCharge || 0);
     const taxGst = Number(invoiceData.taxGst || 0);
-    const additionalAmount = Number(invoiceData.additionalAmount || 0);
-    const additionalAmountDate = invoiceData.additionalAmountDate || '';
-    const totalAmount = baseFare + serviceCharge + taxGst + additionalAmount;
+    const totalAmount = baseFare + serviceCharge + taxGst;
     const paidAmount = Number(invoiceData.initialPayment || 0);
     
     let status = 'pending';
@@ -288,8 +286,6 @@ export const AppProvider = ({ children }) => {
       baseFare,
       serviceCharge,
       taxGst,
-      additionalAmount,
-      additionalAmountDate,
       totalAmount,
       paidAmount,
       status,
@@ -485,9 +481,7 @@ export const AppProvider = ({ children }) => {
         const baseFare = Number(merged.baseFare || 0);
         const serviceCharge = Number(merged.serviceCharge || 0);
         const taxGst = Number(merged.taxGst || 0);
-        const additionalAmount = Number(merged.additionalAmount || 0);
-        const additionalAmountDate = merged.additionalAmountDate || '';
-        const totalAmount = baseFare + serviceCharge + taxGst + additionalAmount;
+        const totalAmount = baseFare + serviceCharge + taxGst;
         const paidAmount = Number(merged.paidAmount || 0);
         
         let status = 'pending';
@@ -502,8 +496,6 @@ export const AppProvider = ({ children }) => {
           baseFare,
           serviceCharge,
           taxGst,
-          additionalAmount,
-          additionalAmountDate,
           totalAmount,
           status
         };

@@ -49,8 +49,6 @@ export default function Invoices() {
     baseFare: 0,
     serviceCharge: 0,
     taxGst: 0,
-    additionalAmount: 0,
-    additionalAmountDate: new Date().toISOString().split('T')[0],
     initialPayment: 0,
     paymentMethod: 'Cash',
     paymentReference: '',
@@ -68,7 +66,7 @@ export default function Invoices() {
   });
 
   // Dynamic cost calculations for form
-  const computedTotal = Number(newInvoice.baseFare || 0) + Number(newInvoice.serviceCharge || 0) + Number(newInvoice.taxGst || 0) + Number(newInvoice.additionalAmount || 0);
+  const computedTotal = Number(newInvoice.baseFare || 0) + Number(newInvoice.serviceCharge || 0) + Number(newInvoice.taxGst || 0);
 
   // Handles Search and Filter logic
   const filteredInvoices = invoices.filter(inv => {
@@ -754,28 +752,6 @@ export default function Invoices() {
                   />
                 </div>
 
-                <div className="form-group" style={{ borderLeft: '1px dashed rgba(255,255,255,0.08)', paddingLeft: '12px' }}>
-                  <label style={{ color: 'var(--primary)', fontWeight: '600' }}>Additional Amount (₹)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    min="0"
-                    value={newInvoice.additionalAmount || ''}
-                    placeholder="e.g. Baggage/Visa additions"
-                    onChange={(e) => setNewInvoice(prev => ({ ...prev, additionalAmount: Number(e.target.value) }))}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Additional Charge Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={newInvoice.additionalAmountDate}
-                    onChange={(e) => setNewInvoice(prev => ({ ...prev, additionalAmountDate: e.target.value }))}
-                  />
-                </div>
-
                 <div className="form-group" style={{ justifyContent: 'center' }}>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>TOTAL AMOUNT</span>
                   <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--primary)' }}>
@@ -963,17 +939,7 @@ export default function Invoices() {
                 
                 <div className="invoice-print-totals">
                   <div className="print-total-row">
-                    <span>Base Fare & Fees:</span>
-                    <span>{formatCurr(Number(selectedInvoice.baseFare || 0) + Number(selectedInvoice.serviceCharge || 0) + Number(selectedInvoice.taxGst || 0))}</span>
-                  </div>
-                  {Number(selectedInvoice.additionalAmount || 0) > 0 && (
-                    <div className="print-total-row">
-                      <span>Additional Charge ({selectedInvoice.additionalAmountDate}):</span>
-                      <span>{formatCurr(selectedInvoice.additionalAmount)}</span>
-                    </div>
-                  )}
-                  <div className="print-total-row" style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: '4px', marginTop: '4px' }}>
-                    <span>Total Invoice Cost:</span>
+                    <span>Invoice Subtotal:</span>
                     <span>{formatCurr(selectedInvoice.totalAmount)}</span>
                   </div>
                   <div className="print-total-row">
@@ -1360,32 +1326,10 @@ export default function Invoices() {
                   />
                 </div>
 
-                <div className="form-group" style={{ borderLeft: '1px dashed rgba(255,255,255,0.08)', paddingLeft: '12px' }}>
-                  <label style={{ color: 'var(--primary)', fontWeight: '600' }}>Additional Amount (₹)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    min="0"
-                    value={editingInvoice.additionalAmount || ''}
-                    placeholder="e.g. Baggage/Visa additions"
-                    onChange={(e) => setEditingInvoice(prev => ({ ...prev, additionalAmount: Number(e.target.value) }))}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Additional Charge Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={editingInvoice.additionalAmountDate || ''}
-                    onChange={(e) => setEditingInvoice(prev => ({ ...prev, additionalAmountDate: e.target.value }))}
-                  />
-                </div>
-
                 <div className="form-group" style={{ justifyContent: 'center' }}>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>TOTAL AMOUNT</span>
                   <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--primary)' }}>
-                    {formatCurr(Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0) + Number(editingInvoice.additionalAmount || 0))}
+                    {formatCurr(Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0))}
                   </span>
                 </div>
               </div>
