@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../../context/AppContext';
 
 export default function Ledger() {
-  const { role, invoices, payments, expenses, vendors, customers, clients } = useContext(AppContext);
+  const { role, invoices, payments, expenses, vendors, customers, clients, resetDatabase } = useContext(AppContext);
 
   // States
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState(() => {
@@ -884,21 +884,42 @@ function doPost(e) {
               </svg>
               Filter Financial Operations:
             </span>
-            <button 
-              className="btn btn-secondary" 
-              style={{ fontSize: '11px', padding: '4px 10px', height: '26px' }}
-              onClick={() => {
-                setSearchQuery('');
-                setTypeFilter('All');
-                setCategoryFilter('All');
-                setStatusFilter('All');
-                setDateFilterType('All');
-                setSelectedCustomerId('All');
-                setSelectedClientId('All');
-              }}
-            >
-              Reset Filters
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ fontSize: '11px', padding: '4px 10px', height: '26px' }}
+                onClick={() => {
+                  setSearchQuery('');
+                  setTypeFilter('All');
+                  setCategoryFilter('All');
+                  setStatusFilter('All');
+                  setDateFilterType('All');
+                  setSelectedCustomerId('All');
+                  setSelectedClientId('All');
+                }}
+              >
+                Reset Filters
+              </button>
+              <button 
+                className="btn btn-danger" 
+                style={{ 
+                  fontSize: '11px', 
+                  padding: '4px 10px', 
+                  height: '26px', 
+                  backgroundColor: 'rgba(239, 68, 68, 0.08)', 
+                  color: 'var(--danger)', 
+                  border: '1px solid rgba(239, 68, 68, 0.2)' 
+                }}
+                onClick={() => {
+                  if (window.confirm("🚨 WARNING: Are you sure you want to permanently delete all invoices, payments, expenses, vendors, passengers, and corporate clients? This will clear all transactions so you can start fresh with your own real data.")) {
+                    resetDatabase();
+                    alert("Database cleared successfully! You can now start entering your own data.");
+                  }
+                }}
+              >
+                🧹 Wipe Mock Transactions
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>

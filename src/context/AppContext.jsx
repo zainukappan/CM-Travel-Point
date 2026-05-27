@@ -2,224 +2,12 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AppContext = createContext();
 
-// Seed Initial Data to WOW the user on first launch
-const INITIAL_CUSTOMERS = [
-  {
-    id: 'CUST-101',
-    name: 'Adnan Siddiqui',
-    email: 'adnan.siddiqui@gmail.com',
-    phone: '+92 321 4567890',
-    passportNo: 'AB8927451',
-    passportExpiry: '2030-10-15',
-    visaDetails: 'Schengen Multi-Entry Visa (Expires: 2027-02-18)',
-    encrypted: true,
-    createdDate: '2026-04-12'
-  },
-  {
-    id: 'CUST-102',
-    name: 'Sarah Thompson',
-    email: 'sarah.t@outlook.com',
-    phone: '+1 415 889 0291',
-    passportNo: 'US9918237',
-    passportExpiry: '2032-05-20',
-    visaDetails: 'eVisa - Saudi Arabia (Tourism)',
-    encrypted: true,
-    createdDate: '2026-05-01'
-  },
-  {
-    id: 'CUST-103',
-    name: 'Mohammed Al-Farsi',
-    email: 'farsi.m@qu.edu.qa',
-    phone: '+974 5543 2190',
-    passportNo: 'QA4482019',
-    passportExpiry: '2031-12-05',
-    visaDetails: 'UK Standard Visitor Visa (Expires: 2026-09-30)',
-    encrypted: true,
-    createdDate: '2026-05-10'
-  },
-  {
-    id: 'CUST-104',
-    name: 'Elena Rostova',
-    email: 'elena.rost@yandex.ru',
-    phone: '+7 901 234 5678',
-    passportNo: 'RU7392810',
-    passportExpiry: '2029-08-11',
-    visaDetails: 'Tourist Visa - UAE (Single Entry)',
-    encrypted: true,
-    createdDate: '2026-05-18'
-  }
-];
-
-const INITIAL_INVOICES = [
-  {
-    id: 'INV-2026-001',
-    customerId: 'CUST-101',
-    customerName: 'Adnan Siddiqui',
-    pnr: 'EK89PZ',
-    ticketNo: '176-2490182745',
-    travelDate: '2026-06-05',
-    travelType: 'Air',
-    details: 'Emirates (Economy) - Lahore (LHE) to Dubai (DXB) - Roundtrip',
-    baseFare: 450,
-    serviceCharge: 50,
-    taxGst: 35,
-    totalAmount: 535,
-    paidAmount: 535,
-    status: 'paid',
-    vendorId: 'VEND-001', // Sabre B2B Portal
-    createdDate: '2026-05-12'
-  },
-  {
-    id: 'INV-2026-002',
-    customerId: 'CUST-102',
-    customerName: 'Sarah Thompson',
-    pnr: 'LH45T2',
-    ticketNo: '220-9182309122',
-    travelDate: '2026-06-15',
-    travelType: 'Air',
-    details: 'Lufthansa (Business) - London (LHR) to New York (JFK) - One Way',
-    baseFare: 1800,
-    serviceCharge: 150,
-    taxGst: 180,
-    totalAmount: 2130,
-    paidAmount: 1000,
-    status: 'partial',
-    vendorId: 'VEND-002', // Amadeus Portal
-    createdDate: '2026-05-15'
-  },
-  {
-    id: 'INV-2026-003',
-    customerId: 'CUST-103',
-    customerName: 'Mohammed Al-Farsi',
-    pnr: 'PNR88902',
-    ticketNo: '992018374',
-    travelDate: '2026-05-28',
-    travelType: 'Train',
-    details: 'Eurostar (Standard Premier) - Paris (CDG) to London (STP) - One Way',
-    baseFare: 180,
-    serviceCharge: 20,
-    taxGst: 15,
-    totalAmount: 215,
-    paidAmount: 0,
-    status: 'pending',
-    vendorId: 'VEND-003', // Local Operator (EuroRail B2B)
-    createdDate: '2026-05-20'
-  },
-  {
-    id: 'INV-2026-004',
-    customerId: 'CUST-104',
-    customerName: 'Elena Rostova',
-    pnr: 'QR99LP',
-    ticketNo: '157-8890123847',
-    travelDate: '2026-06-20',
-    travelType: 'Air',
-    details: 'Qatar Airways (Economy) - Moscow (DME) to Doha (DOH) - One Way',
-    baseFare: 380,
-    serviceCharge: 40,
-    taxGst: 30,
-    totalAmount: 450,
-    paidAmount: 450,
-    status: 'paid',
-    vendorId: 'VEND-002', // Amadeus Portal
-    createdDate: '2026-05-21'
-  }
-];
-
-const INITIAL_PAYMENTS = [
-  {
-    id: 'PAY-301',
-    invoiceId: 'INV-2026-001',
-    amount: 535,
-    date: '2026-05-12',
-    paymentMethod: 'Credit Card',
-    reference: 'TXN_EK_778912'
-  },
-  {
-    id: 'PAY-302',
-    invoiceId: 'INV-2026-002',
-    amount: 1000,
-    date: '2026-05-15',
-    paymentMethod: 'Bank Transfer',
-    reference: 'WIRE-US-9902'
-  },
-  {
-    id: 'PAY-303',
-    invoiceId: 'INV-2026-004',
-    amount: 450,
-    date: '2026-05-21',
-    paymentMethod: 'Cash',
-    reference: 'CASH-REC-108'
-  }
-];
-
-const INITIAL_VENDORS = [
-  {
-    id: 'VEND-001',
-    name: 'Sabre B2B Portal',
-    portalName: 'Sabre Red Web',
-    advancePaid: 5000,
-    outstandingAmount: 0,
-    transactions: [
-      { id: 'VT-401', invoiceId: 'INV-2026-001', type: 'debit', amount: 450, date: '2026-05-12', note: 'Base Fare Booking LHE-DXB' },
-      { id: 'VT-402', type: 'deposit', amount: 5000, date: '2026-05-01', note: 'Advance bank deposit for credit threshold limit' }
-    ]
-  },
-  {
-    id: 'VEND-002',
-    name: 'Amadeus Air Ticketing',
-    portalName: 'Amadeus Sell Connect',
-    advancePaid: 3500,
-    outstandingAmount: 1180, // Sarah's base fare ($1800) + Elena's base ($380) = $2180 B2B ticket costs. Deposited $3500. So we still have advance left, or outstanding. Let's make it easy: outstanding is what we owe, advance is positive credit.
-    transactions: [
-      { id: 'VT-403', type: 'deposit', amount: 3500, date: '2026-05-01', note: 'Portal replenishment deposit' },
-      { id: 'VT-404', invoiceId: 'INV-2026-002', type: 'debit', amount: 1800, date: '2026-05-15', note: 'Ticket cost LHR-JFK' },
-      { id: 'VT-405', invoiceId: 'INV-2026-004', type: 'debit', amount: 380, date: '2026-05-21', note: 'Ticket cost DME-DOH' }
-    ]
-  },
-  {
-    id: 'VEND-003',
-    name: 'EuroRail & Train Consolidators',
-    portalName: 'EuroStar Agent Portal',
-    advancePaid: 500,
-    outstandingAmount: 180,
-    transactions: [
-      { id: 'VT-406', type: 'deposit', amount: 500, date: '2026-05-01', note: 'Agency sign-up deposit' },
-      { id: 'VT-407', invoiceId: 'INV-2026-003', type: 'debit', amount: 180, date: '2026-05-20', note: 'Booking EuroStar Paris-London' }
-    ]
-  }
-];
-
-const INITIAL_EXPENSES = [
-  {
-    id: 'EXP-501',
-    category: 'Rent',
-    amount: 800,
-    date: '2026-05-01',
-    description: 'Office commercial space rent - Suite 302'
-  },
-  {
-    id: 'EXP-502',
-    category: 'Salaries',
-    amount: 1200,
-    date: '2026-05-05',
-    description: 'Lead ticketing executive monthly stipend'
-  },
-  {
-    id: 'EXP-503',
-    category: 'Utilities',
-    amount: 145,
-    date: '2026-05-10',
-    description: 'High speed fiber internet & electricity bills'
-  },
-  {
-    id: 'EXP-504',
-    category: 'Marketing',
-    amount: 150,
-    date: '2026-05-18',
-    description: 'Social media flyer boosting for Summer vacation tour deals'
-  }
-];
-
+// Empty seed arrays to let the user start fresh with their own data
+const INITIAL_CUSTOMERS = [];
+const INITIAL_INVOICES = [];
+const INITIAL_PAYMENTS = [];
+const INITIAL_VENDORS = [];
+const INITIAL_EXPENSES = [];
 const INITIAL_USERS = [
   {
     id: 'USER-001',
@@ -238,27 +26,8 @@ const INITIAL_USERS = [
     permissions: ['view_dashboard', 'create_invoice']
   }
 ];
-
 const INITIAL_AIRLINES = ['Emirates', 'Qatar Airways', 'Lufthansa', 'Air India', 'IndiGo', 'Gulf Air'];
-
-const INITIAL_CLIENTS = [
-  {
-    id: 'CLI-001',
-    name: 'Zain Travels',
-    email: 'info@zaintravels.com',
-    phone: '+91 98456 12345',
-    isClient: true,
-    createdDate: '2026-05-10'
-  },
-  {
-    id: 'CLI-002',
-    name: 'Global Tech Solutions',
-    email: 'travel@globaltech.com',
-    phone: '+91 99123 45678',
-    isClient: true,
-    createdDate: '2026-05-15'
-  }
-];
+const INITIAL_CLIENTS = [];
 
 export const AppProvider = ({ children }) => {
   // User Security Accounts
@@ -898,6 +667,22 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const resetDatabase = () => {
+    localStorage.removeItem('aero_customers');
+    localStorage.removeItem('aero_clients');
+    localStorage.removeItem('aero_invoices');
+    localStorage.removeItem('aero_payments');
+    localStorage.removeItem('aero_vendors');
+    localStorage.removeItem('aero_expenses');
+    
+    setCustomers([]);
+    setClients([]);
+    setInvoices([]);
+    setPayments([]);
+    setVendors([]);
+    setExpenses([]);
+  };
+
   return (
     <AppContext.Provider value={{
       role,
@@ -935,7 +720,8 @@ export const AppProvider = ({ children }) => {
       addVendorDeposit,
       addExpense,
       getFinancialStats,
-      updateUser
+      updateUser,
+      resetDatabase
     }}>
       {children}
     </AppContext.Provider>
