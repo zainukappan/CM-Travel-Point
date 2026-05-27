@@ -1078,6 +1078,51 @@ export default function Invoices() {
                 </tbody>
               </table>
 
+              {/* Payment Log & Scheduled Dues */}
+              <div style={{ marginTop: '24px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', borderBottom: '2px solid var(--primary)', paddingBottom: '4px', marginBottom: '8px', margin: 0 }}>
+                  Remittance Ledger & Scheduled Dues
+                </h4>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #cbd5e1', color: '#475569', fontWeight: '700' }}>
+                      <th style={{ padding: '6px 4px' }}>Clearance Date</th>
+                      <th style={{ padding: '6px 4px' }}>Reference / Memo</th>
+                      <th style={{ padding: '6px 4px' }}>Payment Method</th>
+                      <th style={{ padding: '6px 4px', textAlign: 'right' }}>Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const invPayments = payments
+                        .filter(p => p.invoiceId === selectedInvoice.id)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                      if (invPayments.length > 0) {
+                        return invPayments.map((p, idx) => {
+                          const isFuture = p.date > new Date().toISOString().split('T')[0];
+                          return (
+                            <tr key={idx} style={{ borderBottom: '1px dashed #e2e8f0', backgroundColor: isFuture ? 'rgba(245, 158, 11, 0.03)' : 'transparent' }}>
+                              <td style={{ padding: '6px 4px', fontFamily: 'monospace', fontWeight: '600' }}>{p.date}</td>
+                              <td style={{ padding: '6px 4px' }}>{p.reference} {isFuture && <span style={{ fontSize: '9px', backgroundColor: '#fef3c7', color: '#d97706', padding: '1px 4px', borderRadius: '4px', marginLeft: '6px', fontWeight: '700' }}>PENDING DUE</span>}</td>
+                              <td style={{ padding: '6px 4px' }}>{p.paymentMethod}</td>
+                              <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: '700', color: isFuture ? '#d97706' : '#10b981' }}>{formatCurr(p.amount)}</td>
+                            </tr>
+                          );
+                        });
+                      } else {
+                        return (
+                          <tr>
+                            <td colSpan="4" style={{ padding: '10px 4px', color: '#64748b', textAlign: 'center' }}>
+                              No remittances or due clearances recorded yet for this voucher.
+                            </td>
+                          </tr>
+                        );
+                      }
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
                 <div style={{ maxWidth: '350px' }}>
                   <p style={{ fontSize: '11px', color: '#64748b' }}>
