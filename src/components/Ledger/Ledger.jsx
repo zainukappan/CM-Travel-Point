@@ -162,22 +162,6 @@ export default function Ledger() {
             status: 'completed',
             docNo: 'N/A'
           });
-        } else if (t.type === 'debit') {
-          // Ticketing base cost debits are B2B supplier transactions and must NEVER be shown in individual passenger/client statements
-          if (selectedCustomerId !== 'All' || selectedClientId !== 'All') return;
-
-          const linkedInvoice = invoices.find(inv => inv.id === t.invoiceId);
-          list.push({
-            id: t.id,
-            date: t.date,
-            type: 'Vendor Cost Debit',
-            category: 'Ticketing Base Cost',
-            reference: `${vend.name} - PNR Cost (${t.note})`,
-            amount: t.amount,
-            flow: 'outflow',
-            status: 'completed',
-            docNo: t.invoiceId || 'N/A'
-          });
         }
       });
     });
