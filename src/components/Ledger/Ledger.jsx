@@ -163,10 +163,10 @@ export default function Ledger() {
             docNo: 'N/A'
           });
         } else if (t.type === 'debit') {
-          const linkedInvoice = invoices.find(inv => inv.id === t.invoiceId);
-          if (selectedCustomerId !== 'All' && (!linkedInvoice || linkedInvoice.customerId !== selectedCustomerId)) return;
-          if (selectedClientId !== 'All' && (!linkedInvoice || linkedInvoice.coId !== selectedClientId)) return;
+          // Ticketing base cost debits are B2B supplier transactions and must NEVER be shown in individual passenger/client statements
+          if (selectedCustomerId !== 'All' || selectedClientId !== 'All') return;
 
+          const linkedInvoice = invoices.find(inv => inv.id === t.invoiceId);
           list.push({
             id: t.id,
             date: t.date,
