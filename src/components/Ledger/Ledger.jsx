@@ -99,7 +99,7 @@ export default function Ledger() {
         type: 'Invoice Billed',
         category: 'Sales Invoice',
         reference: `${inv.customerName} (${inv.travelType} PNR: ${inv.pnr || 'N/A'})`,
-        amount: inv.totalAmount,
+        amount: inv.baseFare,
         flow: 'outflow', // Mapped as outflow (Debit) to avoid cash double-counting
         status: inv.status,
         docNo: inv.ticketNo || 'N/A'
