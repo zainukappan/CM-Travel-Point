@@ -15,6 +15,7 @@ export default function CRM() {
   const { 
     customers, 
     invoices, 
+    payments,
     clients, 
     addCustomer, 
     updateCustomer, 
@@ -811,6 +812,35 @@ export default function CRM() {
                                   <div style={{ width: `${Math.min(ratio, 100)}%`, height: '100%', backgroundColor: ratioColor, borderRadius: '3px', transition: 'width 0.5s ease' }} />
                                 </div>
                               </div>
+
+                              {/* Split Payment History Timeline (Dossier detail) */}
+                              {(() => {
+                                const invPayments = (payments || [])
+                                  .filter(p => p.invoiceId === inv.id)
+                                  .sort((a, b) => new Date(a.date) - new Date(b.date));
+                                if (invPayments.length > 0) {
+                                  return (
+                                    <div style={{ marginTop: '8px', borderTop: '1px dashed var(--border-color)', paddingTop: '8px' }}>
+                                      <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                                        💳 Remittance Log & Clearances
+                                      </span>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        {invPayments.map((p, pIdx) => (
+                                          <div key={p.id || pIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', padding: '6px 10px', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                              <span style={{ fontFamily: 'monospace', fontWeight: '600', color: 'var(--text-muted)' }}>{p.date}</span>
+                                              <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>{p.reference || (pIdx === 0 ? 'Initial Deposit' : `Due Clearance #${pIdx}`)}</span>
+                                              <span style={{ fontSize: '9px', color: 'var(--text-muted)', backgroundColor: 'rgba(0,0,0,0.05)', padding: '1px 4px', borderRadius: '4px' }}>{p.paymentMethod}</span>
+                                            </div>
+                                            <span style={{ fontWeight: '700', color: '#10b981' }}>{formatCurr(p.amount)}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           </div>
                         );
@@ -1142,6 +1172,35 @@ export default function CRM() {
                                   <div style={{ width: `${Math.min(ratio, 100)}%`, height: '100%', backgroundColor: ratioColor, borderRadius: '3px', transition: 'width 0.5s ease' }} />
                                 </div>
                               </div>
+
+                              {/* Split Payment History Timeline (Dossier detail) */}
+                              {(() => {
+                                const invPayments = (payments || [])
+                                  .filter(p => p.invoiceId === inv.id)
+                                  .sort((a, b) => new Date(a.date) - new Date(b.date));
+                                if (invPayments.length > 0) {
+                                  return (
+                                    <div style={{ marginTop: '8px', borderTop: '1px dashed var(--border-color)', paddingTop: '8px' }}>
+                                      <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                                        💳 Remittance Log & Clearances
+                                      </span>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        {invPayments.map((p, pIdx) => (
+                                          <div key={p.id || pIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', padding: '6px 10px', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                              <span style={{ fontFamily: 'monospace', fontWeight: '600', color: 'var(--text-muted)' }}>{p.date}</span>
+                                              <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>{p.reference || (pIdx === 0 ? 'Initial Deposit' : `Due Clearance #${pIdx}`)}</span>
+                                              <span style={{ fontSize: '9px', color: 'var(--text-muted)', backgroundColor: 'rgba(0,0,0,0.05)', padding: '1px 4px', borderRadius: '4px' }}>{p.paymentMethod}</span>
+                                            </div>
+                                            <span style={{ fontWeight: '700', color: '#10b981' }}>{formatCurr(p.amount)}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           </div>
                         );
