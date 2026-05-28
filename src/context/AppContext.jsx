@@ -190,6 +190,16 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const appendTimestamp = (dateStr) => {
+    if (!dateStr) return '';
+    if (dateStr.includes(' ')) return dateStr;
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${dateStr} ${hours}:${minutes}:${seconds}`;
+  };
+
   const addInvoice = (invoiceData) => {
     const invId = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
     const baseFare = Number(invoiceData.baseFare || 0);
@@ -201,7 +211,7 @@ export const AppProvider = ({ children }) => {
     if (!invoiceData.paymentsList && Number(invoiceData.initialPayment || 0) > 0) {
       paymentsList = [{
         amount: Number(invoiceData.initialPayment),
-        date: invoiceData.createdDate || new Date().toISOString().split('T')[0],
+        date: appendTimestamp(invoiceData.createdDate || new Date().toISOString().split('T')[0]),
         paymentMethod: invoiceData.paymentMethod || 'Cash',
         reference: invoiceData.paymentReference || 'Initial Invoice Dep'
       }];
@@ -301,7 +311,7 @@ export const AppProvider = ({ children }) => {
       paidAmount,
       status,
       vendorId: invoiceData.vendorId,
-      createdDate: invoiceData.createdDate || new Date().toISOString().split('T')[0]
+      createdDate: appendTimestamp(invoiceData.createdDate || new Date().toISOString().split('T')[0])
     };
 
     setInvoices(prev => [newInvoice, ...prev]);
@@ -315,7 +325,7 @@ export const AppProvider = ({ children }) => {
           id: p.id || `PAY-${Date.now().toString().slice(-3)}-${idx}`,
           invoiceId: invId,
           amount: Number(p.amount),
-          date: p.date,
+          date: appendTimestamp(p.date),
           paymentMethod: p.paymentMethod || 'Cash',
           reference: p.reference || (idx === 0 ? 'Initial Deposit' : 'Future Due Clearance')
         }));
@@ -356,7 +366,7 @@ export const AppProvider = ({ children }) => {
       id: `PAY-${Date.now().toString().slice(-3)}`,
       invoiceId,
       amount: amt,
-      date: paymentData.date || new Date().toISOString().split('T')[0],
+      date: appendTimestamp(paymentData.date || new Date().toISOString().split('T')[0]),
       paymentMethod: paymentData.paymentMethod || 'Cash',
       reference: paymentData.reference || 'Partial Pay Rec'
     };
@@ -432,7 +442,7 @@ export const AppProvider = ({ children }) => {
             id: p.id || `PAY-${Date.now().toString().slice(-3)}-${idx}`,
             invoiceId: id,
             amount: Number(p.amount),
-            date: p.date,
+            date: appendTimestamp(p.date),
             paymentMethod: p.paymentMethod || 'Cash',
             reference: p.reference || (idx === 0 ? 'Initial Deposit' : 'Future Due Clearance')
           }));
@@ -509,6 +519,9 @@ export const AppProvider = ({ children }) => {
           coId: finalCoId,
           coName: finalCoName
         };
+        if (merged.createdDate) {
+          merged.createdDate = appendTimestamp(merged.createdDate);
+        }
         const baseFare = Number(merged.baseFare || 0);
         const serviceCharge = Number(merged.serviceCharge || 0);
         const taxGst = Number(merged.taxGst || 0);
