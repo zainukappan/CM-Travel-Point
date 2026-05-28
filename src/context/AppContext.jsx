@@ -197,7 +197,6 @@ export const AppProvider = ({ children }) => {
     const taxGst = Number(invoiceData.taxGst || 0);
     const totalAmount = baseFare + serviceCharge + taxGst;
     
-    const todayStr = new Date().toISOString().split('T')[0];
     let paymentsList = invoiceData.paymentsList || [];
     if (!invoiceData.paymentsList && Number(invoiceData.initialPayment || 0) > 0) {
       paymentsList = [{
@@ -208,9 +207,7 @@ export const AppProvider = ({ children }) => {
       }];
     }
     
-    const paidAmount = paymentsList
-      .filter(p => p.date <= todayStr)
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const paidAmount = paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
     
     let status = 'pending';
     if (paidAmount >= totalAmount) {
@@ -517,10 +514,9 @@ export const AppProvider = ({ children }) => {
         const taxGst = Number(merged.taxGst || 0);
         const totalAmount = baseFare + serviceCharge + taxGst;
         
-        const todayStr = new Date().toISOString().split('T')[0];
         const paymentsList = merged.paymentsList || [];
         const paidAmount = paymentsList.length > 0
-          ? paymentsList.filter(p => p.date <= todayStr).reduce((sum, p) => sum + Number(p.amount || 0), 0)
+          ? paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0)
           : Number(merged.paidAmount || 0);
         
         let status = 'pending';

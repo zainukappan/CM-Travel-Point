@@ -836,114 +836,184 @@ export default function Invoices() {
               </div>
 
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>💳 Payments Schedule (Initial Deposit & Future Dues)</span>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ padding: '4px 10px', fontSize: '11px', height: '28px' }}
-                    onClick={() => {
-                      const totalCost = computedTotal;
-                      const currentAllocated = newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-                      const remaining = Math.max(0, totalCost - currentAllocated);
-                      
-                      setNewInvoice(prev => ({
-                        ...prev,
-                        paymentsList: [
-                          ...prev.paymentsList,
-                          {
-                            amount: remaining,
-                            date: prev.travelDate || new Date().toISOString().split('T')[0],
-                            paymentMethod: 'Cash',
-                            reference: 'Future Due Clearance'
-                          }
-                        ]
-                      }));
-                    }}
-                  >
-                    + Add Future Due Payment
-                  </button>
-                </h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
-                  {newInvoice.paymentsList.map((pay, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap', backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                      <div className="form-group" style={{ flex: '1 1 120px' }}>
-                        <label>{idx === 0 ? 'Initial Deposit (₹)' : `Future Clearance #${idx} (₹)`}</label>
+                {/* SECTION 1: Initial Customer Deposit */}
+                <div style={{ backgroundColor: 'rgba(79, 70, 229, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(79, 70, 229, 0.1)', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>💵 Section 1: Initial Customer Deposit (Paid at Ticketing)</span>
+                  </h3>
+                  
+                  {newInvoice.paymentsList[0] && (
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Deposit Amount (₹)</label>
                         <input
                           type="number"
                           className="form-input"
                           min="0"
-                          value={pay.amount || ''}
+                          value={newInvoice.paymentsList[0].amount || ''}
                           onChange={(e) => {
                             const val = Number(e.target.value);
-                            updatePaymentRow(idx, 'amount', val);
+                            updatePaymentRow(0, 'amount', val);
                           }}
                         />
                       </div>
-                      <div className="form-group" style={{ flex: '1 1 130px' }}>
-                        <label>Clearance Date</label>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Date</label>
                         <input
                           type="date"
                           className="form-input"
-                          value={pay.date}
-                          onChange={(e) => updatePaymentRow(idx, 'date', e.target.value)}
+                          value={newInvoice.paymentsList[0].date}
+                          onChange={(e) => updatePaymentRow(0, 'date', e.target.value)}
                         />
                       </div>
-                      <div className="form-group" style={{ flex: '1 1 120px' }}>
-                        <label>Method</label>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Method</label>
                         <select
                           className="form-select"
-                          value={pay.paymentMethod}
-                          onChange={(e) => updatePaymentRow(idx, 'paymentMethod', e.target.value)}
+                          value={newInvoice.paymentsList[0].paymentMethod}
+                          onChange={(e) => updatePaymentRow(0, 'paymentMethod', e.target.value)}
                         >
                           <option value="Cash">Cash Receipt</option>
                           <option value="Bank Transfer">Bank Transfer</option>
                           <option value="Credit Card">Credit Card</option>
                         </select>
                       </div>
-                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                      <div className="form-group" style={{ flex: '1 1 180px' }}>
                         <label>Reference / Memo</label>
                         <input
                           type="text"
                           className="form-input"
-                          placeholder="e.g. Due clearance"
-                          value={pay.reference || ''}
-                          onChange={(e) => updatePaymentRow(idx, 'reference', e.target.value)}
+                          placeholder="e.g. Initial Customer Deposit"
+                          value={newInvoice.paymentsList[0].reference || ''}
+                          onChange={(e) => updatePaymentRow(0, 'reference', e.target.value)}
                         />
                       </div>
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          className="btn btn-danger"
-                          style={{ padding: '6px 10px', height: '36px', minWidth: '36px', fontSize: '14px' }}
-                          onClick={() => removePaymentRow(idx)}
-                        >
-                          ✕
-                        </button>
-                      )}
                     </div>
-                  ))}
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px dashed var(--border-color)', fontSize: '12px', marginBottom: '14px' }}>
+                {/* SECTION 2: Subsequent Due Clearances */}
+                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.01)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>💳 Section 2: Subsequent Due Clearances (Paid Later)</span>
+                    </h3>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '11px', height: '28px', gap: '4px' }}
+                      onClick={() => {
+                        const totalCost = computedTotal;
+                        const currentAllocated = newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const remaining = Math.max(0, totalCost - currentAllocated);
+                        
+                        setNewInvoice(prev => ({
+                          ...prev,
+                          paymentsList: [
+                            ...prev.paymentsList,
+                            {
+                              amount: remaining,
+                              date: new Date().toISOString().split('T')[0],
+                              paymentMethod: 'Cash',
+                              reference: `Due Clearance #${prev.paymentsList.length}`
+                            }
+                          ]
+                        }));
+                      }}
+                    >
+                      <span>+ Add Due Clearance Row</span>
+                    </button>
+                  </div>
+
+                  {newInvoice.paymentsList.length > 1 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                      {newInvoice.paymentsList.slice(1).map((pay, idx) => {
+                        const actualIdx = idx + 1;
+                        return (
+                          <div key={actualIdx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap', backgroundColor: 'var(--bg-app)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Clearance Amount (₹)</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                min="0"
+                                value={pay.amount || ''}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  updatePaymentRow(actualIdx, 'amount', val);
+                                }}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 130px' }}>
+                              <label>Payment Date</label>
+                              <input
+                                type="date"
+                                className="form-input"
+                                value={pay.date}
+                                onChange={(e) => updatePaymentRow(actualIdx, 'date', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Method</label>
+                              <select
+                                className="form-select"
+                                value={pay.paymentMethod}
+                                onChange={(e) => updatePaymentRow(actualIdx, 'paymentMethod', e.target.value)}
+                              >
+                                <option value="Cash">Cash Receipt</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Credit Card">Credit Card</option>
+                              </select>
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 140px' }}>
+                              <label>Reference / Memo</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={`e.g. Due clearance #${actualIdx}`}
+                                value={pay.reference || ''}
+                                onChange={(e) => updatePaymentRow(actualIdx, 'reference', e.target.value)}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              style={{ padding: '6px 10px', height: '36px', minWidth: '36px', fontSize: '14px' }}
+                              onClick={() => removePaymentRow(actualIdx)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '16px', border: '1px dashed var(--border-color)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      No split due clearance payments logged yet. If the passenger splits the due payment, add clearance rows above when they pay.
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Breakdown Card */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'var(--bg-app)', border: '1px dashed var(--border-color)', fontSize: '13px', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Total Cost: </span>
-                    <strong style={{ color: 'var(--text-main)' }}>{formatCurr(computedTotal)}</strong>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Ticket Cost: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(computedTotal)}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Total Scheduled: </span>
-                    <strong style={{ color: 'var(--text-main)' }}>{formatCurr(newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</strong>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Collected: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</strong>
                   </div>
                   <div>
                     {(() => {
-                      const diff = computedTotal - newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const totalCollected = newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const diff = computedTotal - totalCollected;
                       if (diff > 0) {
-                        return <span style={{ color: 'var(--warning)', fontWeight: '600' }}>⚠️ Unallocated Dues: {formatCurr(diff)}</span>;
+                        return <span style={{ color: '#d97706', fontWeight: '700', backgroundColor: '#fef3c7', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Unpaid Due: {formatCurr(diff)}</span>;
                       } else if (diff < 0) {
-                        return <span style={{ color: 'var(--danger)', fontWeight: '600' }}>⚠️ Overallocated by: {formatCurr(Math.abs(diff))}</span>;
+                        return <span style={{ color: '#ef4444', fontWeight: '700', backgroundColor: '#fee2e2', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Overallocated: {formatCurr(Math.abs(diff))}</span>;
                       } else {
-                        return <span style={{ color: 'var(--success)', fontWeight: '600' }}>✓ Payments Fully Allocated</span>;
+                        return <span style={{ color: '#10b981', fontWeight: '700', backgroundColor: '#d1fae5', padding: '4px 10px', borderRadius: '6px' }}>✓ Fully Paid Off</span>;
                       }
                     })()}
                   </div>
@@ -1078,10 +1148,10 @@ export default function Invoices() {
                 </tbody>
               </table>
 
-              {/* Payment Log & Scheduled Dues */}
+              {/* Payment Log & Actual Remittances */}
               <div style={{ marginTop: '24px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', borderBottom: '2px solid var(--primary)', paddingBottom: '4px', marginBottom: '8px', margin: 0 }}>
-                  Remittance Ledger & Scheduled Dues
+                  Remittance History & Payment Ledgers
                 </h4>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
                   <thead>
@@ -1099,13 +1169,12 @@ export default function Invoices() {
                         .sort((a, b) => new Date(a.date) - new Date(b.date));
                       if (invPayments.length > 0) {
                         return invPayments.map((p, idx) => {
-                          const isFuture = p.date > new Date().toISOString().split('T')[0];
                           return (
-                            <tr key={idx} style={{ borderBottom: '1px dashed #e2e8f0', backgroundColor: isFuture ? 'rgba(245, 158, 11, 0.03)' : 'transparent' }}>
+                            <tr key={idx} style={{ borderBottom: '1px dashed #e2e8f0' }}>
                               <td style={{ padding: '6px 4px', fontFamily: 'monospace', fontWeight: '600' }}>{p.date}</td>
-                              <td style={{ padding: '6px 4px' }}>{p.reference} {isFuture && <span style={{ fontSize: '9px', backgroundColor: '#fef3c7', color: '#d97706', padding: '1px 4px', borderRadius: '4px', marginLeft: '6px', fontWeight: '700' }}>PENDING DUE</span>}</td>
+                              <td style={{ padding: '6px 4px' }}>{p.reference || (idx === 0 ? 'Initial Customer Deposit' : `Due Clearance #${idx}`)}</td>
                               <td style={{ padding: '6px 4px' }}>{p.paymentMethod}</td>
-                              <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: '700', color: isFuture ? '#d97706' : '#10b981' }}>{formatCurr(p.amount)}</td>
+                              <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: '700', color: '#10b981' }}>{formatCurr(p.amount)}</td>
                             </tr>
                           );
                         });
@@ -1539,115 +1608,185 @@ export default function Invoices() {
               </div>
 
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>💳 Payments Schedule (Initial Deposit & Future Dues)</span>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ padding: '4px 10px', fontSize: '11px', height: '28px' }}
-                    onClick={() => {
-                      const totalCost = Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0);
-                      const currentAllocated = editingInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-                      const remaining = Math.max(0, totalCost - currentAllocated);
-                      
-                      setEditingInvoice(prev => ({
-                        ...prev,
-                        paymentsList: [
-                          ...prev.paymentsList,
-                          {
-                            amount: remaining,
-                            date: prev.travelDate || new Date().toISOString().split('T')[0],
-                            paymentMethod: 'Cash',
-                            reference: 'Future Due Clearance'
-                          }
-                        ]
-                      }));
-                    }}
-                  >
-                    + Add Future Due Payment
-                  </button>
-                </h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
-                  {(editingInvoice.paymentsList || []).map((pay, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap', backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                      <div className="form-group" style={{ flex: '1 1 120px' }}>
-                        <label>{idx === 0 ? 'Initial Deposit (₹)' : `Future Clearance #${idx} (₹)`}</label>
+                {/* SECTION 1: Initial Customer Deposit */}
+                <div style={{ backgroundColor: 'rgba(79, 70, 229, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(79, 70, 229, 0.1)', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>💵 Section 1: Initial Customer Deposit (Paid at Ticketing)</span>
+                  </h3>
+                  
+                  {editingInvoice.paymentsList[0] && (
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Deposit Amount (₹)</label>
                         <input
                           type="number"
                           className="form-input"
                           min="0"
-                          value={pay.amount || ''}
+                          value={editingInvoice.paymentsList[0].amount || ''}
                           onChange={(e) => {
                             const val = Number(e.target.value);
-                            updateEditPaymentRow(idx, 'amount', val);
+                            updateEditPaymentRow(0, 'amount', val);
                           }}
                         />
                       </div>
-                      <div className="form-group" style={{ flex: '1 1 130px' }}>
-                        <label>Clearance Date</label>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Date</label>
                         <input
                           type="date"
                           className="form-input"
-                          value={pay.date}
-                          onChange={(e) => updateEditPaymentRow(idx, 'date', e.target.value)}
+                          value={editingInvoice.paymentsList[0].date}
+                          onChange={(e) => updateEditPaymentRow(0, 'date', e.target.value)}
                         />
                       </div>
-                      <div className="form-group" style={{ flex: '1 1 120px' }}>
-                        <label>Method</label>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Method</label>
                         <select
                           className="form-select"
-                          value={pay.paymentMethod}
-                          onChange={(e) => updateEditPaymentRow(idx, 'paymentMethod', e.target.value)}
+                          value={editingInvoice.paymentsList[0].paymentMethod}
+                          onChange={(e) => updateEditPaymentRow(0, 'paymentMethod', e.target.value)}
                         >
                           <option value="Cash">Cash Receipt</option>
                           <option value="Bank Transfer">Bank Transfer</option>
                           <option value="Credit Card">Credit Card</option>
                         </select>
                       </div>
-                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                      <div className="form-group" style={{ flex: '1 1 180px' }}>
                         <label>Reference / Memo</label>
                         <input
                           type="text"
                           className="form-input"
-                          placeholder="e.g. Due clearance"
-                          value={pay.reference || ''}
-                          onChange={(e) => updateEditPaymentRow(idx, 'reference', e.target.value)}
+                          placeholder="e.g. Initial Customer Deposit"
+                          value={editingInvoice.paymentsList[0].reference || ''}
+                          onChange={(e) => updateEditPaymentRow(0, 'reference', e.target.value)}
                         />
                       </div>
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          className="btn btn-danger"
-                          style={{ padding: '6px 10px', height: '36px', minWidth: '36px', fontSize: '14px' }}
-                          onClick={() => removeEditPaymentRow(idx)}
-                        >
-                          ✕
-                        </button>
-                      )}
                     </div>
-                  ))}
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px dashed var(--border-color)', fontSize: '12px', marginBottom: '14px' }}>
+                {/* SECTION 2: Subsequent Due Clearances */}
+                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.01)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>💳 Section 2: Subsequent Due Clearances (Paid Later)</span>
+                    </h3>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '11px', height: '28px', gap: '4px' }}
+                      onClick={() => {
+                        const totalCost = Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0);
+                        const currentAllocated = editingInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const remaining = Math.max(0, totalCost - currentAllocated);
+                        
+                        setEditingInvoice(prev => ({
+                          ...prev,
+                          paymentsList: [
+                            ...prev.paymentsList,
+                            {
+                              amount: remaining,
+                              date: new Date().toISOString().split('T')[0],
+                              paymentMethod: 'Cash',
+                              reference: `Due Clearance #${prev.paymentsList.length}`
+                            }
+                          ]
+                        }));
+                      }}
+                    >
+                      <span>+ Add Due Clearance Row</span>
+                    </button>
+                  </div>
+
+                  {editingInvoice.paymentsList.length > 1 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                      {editingInvoice.paymentsList.slice(1).map((pay, idx) => {
+                        const actualIdx = idx + 1;
+                        return (
+                          <div key={actualIdx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap', backgroundColor: 'var(--bg-app)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Clearance Amount (₹)</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                min="0"
+                                value={pay.amount || ''}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  updateEditPaymentRow(actualIdx, 'amount', val);
+                                }}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 130px' }}>
+                              <label>Payment Date</label>
+                              <input
+                                type="date"
+                                className="form-input"
+                                value={pay.date}
+                                onChange={(e) => updateEditPaymentRow(actualIdx, 'date', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Method</label>
+                              <select
+                                className="form-select"
+                                value={pay.paymentMethod}
+                                onChange={(e) => updateEditPaymentRow(actualIdx, 'paymentMethod', e.target.value)}
+                              >
+                                <option value="Cash">Cash Receipt</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Credit Card">Credit Card</option>
+                              </select>
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 140px' }}>
+                              <label>Reference / Memo</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={`e.g. Due clearance #${actualIdx}`}
+                                value={pay.reference || ''}
+                                onChange={(e) => updateEditPaymentRow(actualIdx, 'reference', e.target.value)}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              style={{ padding: '6px 10px', height: '36px', minWidth: '36px', fontSize: '14px' }}
+                              onClick={() => removeEditPaymentRow(actualIdx)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '16px', border: '1px dashed var(--border-color)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      No split due clearance payments logged yet. If the passenger splits the due payment, add clearance rows above when they pay.
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Breakdown Card */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'var(--bg-app)', border: '1px dashed var(--border-color)', fontSize: '13px', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Total Cost: </span>
-                    <strong style={{ color: 'var(--text-main)' }}>{formatCurr(Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0))}</strong>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Ticket Cost: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0))}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Total Scheduled: </span>
-                    <strong style={{ color: 'var(--text-main)' }}>{formatCurr((editingInvoice.paymentsList || []).reduce((sum, p) => sum + Number(p.amount || 0), 0))}</strong>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Collected: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(editingInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</strong>
                   </div>
                   <div>
                     {(() => {
                       const totalCost = Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0);
-                      const diff = totalCost - (editingInvoice.paymentsList || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const totalCollected = editingInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const diff = totalCost - totalCollected;
                       if (diff > 0) {
-                        return <span style={{ color: 'var(--warning)', fontWeight: '600' }}>⚠️ Unallocated Dues: {formatCurr(diff)}</span>;
+                        return <span style={{ color: '#d97706', fontWeight: '700', backgroundColor: '#fef3c7', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Unpaid Due: {formatCurr(diff)}</span>;
                       } else if (diff < 0) {
-                        return <span style={{ color: 'var(--danger)', fontWeight: '600' }}>⚠️ Overallocated by: {formatCurr(Math.abs(diff))}</span>;
+                        return <span style={{ color: '#ef4444', fontWeight: '700', backgroundColor: '#fee2e2', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Overallocated: {formatCurr(Math.abs(diff))}</span>;
                       } else {
-                        return <span style={{ color: 'var(--success)', fontWeight: '600' }}>✓ Payments Fully Allocated</span>;
+                        return <span style={{ color: '#10b981', fontWeight: '700', backgroundColor: '#d1fae5', padding: '4px 10px', borderRadius: '6px' }}>✓ Fully Paid Off</span>;
                       }
                     })()}
                   </div>
