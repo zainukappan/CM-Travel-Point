@@ -8,6 +8,7 @@ import CRM from './components/CRM/CRM';
 import Vendors from './components/Vendors/Vendors';
 import Expenses from './components/Expenses/Expenses';
 import Security from './components/Security/Security';
+import Ledger from './components/Ledger/Ledger';
 import './App.css';
 
 function MainAppShell() {
@@ -111,6 +112,8 @@ function MainAppShell() {
         return <Vendors />;
       case 'expenses':
         return <Expenses />;
+      case 'ledger':
+        return <Ledger />;
       case 'security':
         return <Security />;
       default:

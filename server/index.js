@@ -391,8 +391,29 @@ app.put('/api/invoices/:id', async (req, res) => {
     const serviceCharge = Number(updatedData.serviceCharge || 0);
     const taxGst = Number(updatedData.taxGst || 0);
     const totalAmount = baseFare + serviceCharge + taxGst;
-    const paidAmount = Number(updatedData.paidAmount || 0);
+    
+    let paidAmount = Number(updatedData.paidAmount || 0);
     const createdDate = new Date().toISOString().split('T')[0];
+
+    // Handle cascading payments list updates if supplied by the client
+    if (updatedData.paymentsList) {
+      // 1. Delete previous payments
+      await dbClient.query('DELETE FROM payments WHERE invoice_id = $1', [id]);
+
+      // 2. Insert updated payments
+      paidAmount = 0;
+      const validPayments = updatedData.paymentsList.filter(p => Number(p.amount || 0) > 0);
+      for (let i = 0; i < validPayments.length; i++) {
+        const p = validPayments[i];
+        const payId = p.id || `PAY-${Date.now().toString().slice(-3)}-${i}`;
+        const amt = Number(p.amount);
+        paidAmount += amt;
+        await dbClient.query(
+          'INSERT INTO payments (id, invoice_id, amount, date, payment_method, reference) VALUES ($1, $2, $3, $4, $5, $6)',
+          [payId, id, amt, p.date, p.paymentMethod || 'Cash', p.reference || (i === 0 ? 'Initial Deposit' : 'Future Due Clearance')]
+        );
+      }
+    }
 
     let status = 'pending';
     if (paidAmount >= totalAmount) {
@@ -663,17 +684,45 @@ app.get('/api/expenses', async (req, res) => {
 });
 
 app.post('/api/expenses', async (req, res) => {
-  const { category, amount, date, description } = req.body;
-  const id = `EXP-${Date.now().toString().slice(-3)}`;
+  const { category, amount, date, description, type } = req.body;
+  const isIncome = type === 'income';
+  const id = `${isIncome ? 'INC' : 'EXP'}-${Date.now().toString().slice(-3)}`;
   const expAmt = Number(amount);
   const expDate = date || new Date().toISOString().split('T')[0];
   try {
     const result = await pool.query(
-      'INSERT INTO expenses (id, category, amount, date, description) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [id, category, expAmt, expDate, description || '']
+      'INSERT INTO expenses (id, category, amount, date, description, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [id, category, expAmt, expDate, description || '', type || 'expense']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/expenses/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM expenses WHERE id = $1', [id]);
+    res.json({ message: 'Expense successfully deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/reset', async (req, res) => {
+  const dbClient = await pool.connect();
+  try {
+    await dbClient.query('BEGIN');
+    await dbClient.query('TRUNCATE TABLE payments, invoices, vendor_transactions, vendors, expenses, customers, clients CASCADE');
+    const { seedInitialData } = require('./db');
+    await seedInitialData(dbClient);
+    await dbClient.query('COMMIT');
+    res.json({ message: 'Database successfully reset to initial seed state.' });
+  } catch (err) {
+    await dbClient.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    dbClient.release();
   }
 });

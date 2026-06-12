@@ -3,7 +3,7 @@ import { AppContext } from '../../context/AppContext';
 import { LogoSVG } from '../Sidebar';
 
 export default function Invoices() {
-  const { invoices, customers, vendors, airlines, clients, addInvoice, addPayment, updateInvoice, deleteInvoice, addAirline } = useContext(AppContext);
+  const { invoices, payments, customers, vendors, airlines, clients, addInvoice, addPayment, updateInvoice, deleteInvoice, addAirline } = useContext(AppContext);
 
   // Filter and Search States
   const [search, setSearch] = useState('');
@@ -17,6 +17,19 @@ export default function Invoices() {
   // Edit Invoice States
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(null);
+
+  // Sorting States
+  const [sortField, setSortField] = useState('createdDate'); // default sorting by Invoice Date
+  const [sortDirection, setSortDirection] = useState('desc'); // default descending (newest first)
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   // Form Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -36,11 +49,47 @@ export default function Invoices() {
     baseFare: 0,
     serviceCharge: 0,
     taxGst: 0,
-    initialPayment: 0,
-    paymentMethod: 'Cash',
-    paymentReference: '',
+    createdDate: new Date().toISOString().split('T')[0],
+    paymentsList: [
+      {
+        amount: 0,
+        date: new Date().toISOString().split('T')[0],
+        paymentMethod: 'Cash',
+        reference: 'Initial Deposit'
+      }
+    ],
     vendorId: ''
   });
+
+  const updatePaymentRow = (idx, field, val) => {
+    setNewInvoice(prev => {
+      const list = [...prev.paymentsList];
+      list[idx] = { ...list[idx], [field]: val };
+      return { ...prev, paymentsList: list };
+    });
+  };
+
+  const removePaymentRow = (idx) => {
+    setNewInvoice(prev => {
+      const list = prev.paymentsList.filter((_, i) => i !== idx);
+      return { ...prev, paymentsList: list };
+    });
+  };
+
+  const updateEditPaymentRow = (idx, field, val) => {
+    setEditingInvoice(prev => {
+      const list = [...prev.paymentsList];
+      list[idx] = { ...list[idx], [field]: val };
+      return { ...prev, paymentsList: list };
+    });
+  };
+
+  const removeEditPaymentRow = (idx) => {
+    setEditingInvoice(prev => {
+      const list = prev.paymentsList.filter((_, i) => i !== idx);
+      return { ...prev, paymentsList: list };
+    });
+  };
 
   // View Modal States
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -75,6 +124,26 @@ export default function Invoices() {
     }
 
     return matchesSearch && matchesType && matchesStatus && matchesDate;
+  });
+
+  // Sort Invoices
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+    let valA = a[sortField];
+    let valB = b[sortField];
+
+    if (valA === undefined || valA === null) valA = '';
+    if (valB === undefined || valB === null) valB = '';
+
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    }
+
+    const strA = String(valA).toLowerCase();
+    const strB = String(valB).toLowerCase();
+
+    if (strA < strB) return sortDirection === 'asc' ? -1 : 1;
+    if (strA > strB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   // Format currency
@@ -131,9 +200,15 @@ export default function Invoices() {
       baseFare: 0,
       serviceCharge: 0,
       taxGst: 0,
-      initialPayment: 0,
-      paymentMethod: 'Cash',
-      paymentReference: '',
+      createdDate: new Date().toISOString().split('T')[0],
+      paymentsList: [
+        {
+          amount: 0,
+          date: new Date().toISOString().split('T')[0],
+          paymentMethod: 'Cash',
+          reference: 'Initial Deposit'
+        }
+      ],
       vendorId: ''
     });
     
@@ -329,22 +404,42 @@ export default function Invoices() {
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Invoice ID</th>
-                <th>Passenger Name</th>
-                <th>PNR / Ticket</th>
-                <th>Travel Date</th>
-                <th>Details</th>
-                <th>Invoice Cost</th>
-                <th>Paid</th>
-                <th>Status</th>
+                <th onClick={() => handleSort('id')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Invoice ID {sortField === 'id' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('createdDate')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Invoice Date {sortField === 'createdDate' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('customerName')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Passenger Name {sortField === 'customerName' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('pnr')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  PNR / Ticket {sortField === 'pnr' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('travelDate')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Travel Date {sortField === 'travelDate' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('details')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Details {sortField === 'details' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('totalAmount')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right' }}>
+                  Invoice Cost {sortField === 'totalAmount' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('paidAmount')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right' }}>
+                  Paid {sortField === 'paidAmount' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+                <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Status {sortField === 'status' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredInvoices.length > 0 ? (
-                filteredInvoices.map(inv => (
+              {sortedInvoices.length > 0 ? (
+                sortedInvoices.map(inv => (
                   <tr key={inv.id}>
                     <td style={{ fontWeight: '600', color: 'var(--primary)' }}>{inv.id}</td>
+                    <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>{inv.createdDate || inv.travelDate || 'N/A'}</td>
                     <td>{inv.customerName}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -369,7 +464,29 @@ export default function Invoices() {
                           className="btn btn-secondary"
                           style={{ padding: '6px 10px', fontSize: '12px' }}
                           onClick={() => {
-                            setEditingInvoice({ ...inv });
+                            const invPayments = payments
+                              .filter(p => p.invoiceId === inv.id)
+                              .map(p => ({
+                                id: p.id,
+                                amount: p.amount,
+                                date: p.date,
+                                paymentMethod: p.paymentMethod,
+                                reference: p.reference
+                              }));
+                            
+                            const paymentsList = invPayments.length > 0 ? invPayments : [
+                              {
+                                amount: 0,
+                                date: inv.createdDate || new Date().toISOString().split('T')[0],
+                                paymentMethod: 'Cash',
+                                reference: 'Initial Deposit'
+                              }
+                            ];
+
+                            setEditingInvoice({
+                              ...inv,
+                              paymentsList
+                            });
                             setIsEditOpen(true);
                           }}
                           title="Edit Invoice details"
@@ -391,6 +508,18 @@ export default function Invoices() {
                           title="Share confirmation on passenger WhatsApp"
                         >
                           💬
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          style={{ padding: '6px 10px', fontSize: '12px' }}
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete invoice ${inv.id} for ${inv.customerName}? This will permanently remove it from the system.`)) {
+                              deleteInvoice(inv.id);
+                            }
+                          }}
+                          title="Permanently delete this invoice"
+                        >
+                          Delete
                         </button>
                       </div>
                     </td>
@@ -544,6 +673,17 @@ export default function Invoices() {
                     onChange={(e) => setNewInvoice(prev => ({ ...prev, travelDate: e.target.value }))}
                   />
                 </div>
+
+                <div className="form-group">
+                  <label>Invoice Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    required
+                    value={newInvoice.createdDate}
+                    onChange={(e) => setNewInvoice(prev => ({ ...prev, createdDate: e.target.value }))}
+                  />
+                </div>
               </div>
 
               {/* Transit Subcategory Specific Fields */}
@@ -695,46 +835,189 @@ export default function Invoices() {
                 </div>
               </div>
 
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Initial Customer Deposit (₹)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    min="0"
-                    max={computedTotal}
-                    value={newInvoice.initialPayment}
-                    onChange={(e) => setNewInvoice(prev => ({ ...prev, initialPayment: Number(e.target.value) }))}
-                  />
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                {/* SECTION 1: Initial Customer Deposit */}
+                <div style={{ backgroundColor: 'rgba(79, 70, 229, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(79, 70, 229, 0.1)', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>💵 Section 1: Initial Customer Deposit (Paid at Ticketing)</span>
+                  </h3>
+                  
+                  {newInvoice.paymentsList[0] && (
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Deposit Amount (₹)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          min="0"
+                          value={newInvoice.paymentsList[0].amount || ''}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            updatePaymentRow(0, 'amount', val);
+                          }}
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Date</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={newInvoice.paymentsList[0].date}
+                          onChange={(e) => updatePaymentRow(0, 'date', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Method</label>
+                        <select
+                          className="form-select"
+                          value={newInvoice.paymentsList[0].paymentMethod}
+                          onChange={(e) => updatePaymentRow(0, 'paymentMethod', e.target.value)}
+                        >
+                          <option value="Cash">Cash Receipt</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                          <option value="Credit Card">Credit Card</option>
+                        </select>
+                      </div>
+                      <div className="form-group" style={{ flex: '1 1 180px' }}>
+                        <label>Reference / Memo</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Initial Customer Deposit"
+                          value={newInvoice.paymentsList[0].reference || ''}
+                          onChange={(e) => updatePaymentRow(0, 'reference', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {newInvoice.initialPayment > 0 && (
-                  <>
-                    <div className="form-group">
-                      <label>Payment Channel</label>
-                      <select
-                        className="form-select"
-                        value={newInvoice.paymentMethod}
-                        onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                      >
-                        <option value="Cash">Cash Receipt</option>
-                        <option value="Bank Transfer">Bank Wire Transfer</option>
-                        <option value="Credit Card">Credit Card Processing</option>
-                      </select>
-                    </div>
+                {/* SECTION 2: Subsequent Due Clearances */}
+                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.01)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>💳 Section 2: Subsequent Due Clearances (Paid Later)</span>
+                    </h3>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '11px', height: '28px', gap: '4px' }}
+                      onClick={() => {
+                        const totalCost = computedTotal;
+                        const currentAllocated = newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const remaining = Math.max(0, totalCost - currentAllocated);
+                        
+                        setNewInvoice(prev => ({
+                          ...prev,
+                          paymentsList: [
+                            ...prev.paymentsList,
+                            {
+                              amount: remaining,
+                              date: new Date().toISOString().split('T')[0],
+                              paymentMethod: 'Cash',
+                              reference: `Due Clearance #${prev.paymentsList.length}`
+                            }
+                          ]
+                        }));
+                      }}
+                    >
+                      <span>+ Add Due Clearance Row</span>
+                    </button>
+                  </div>
 
-                    <div className="form-group">
-                      <label>Transaction Reference ID</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. Wire reference code"
-                        value={newInvoice.paymentReference}
-                        onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentReference: e.target.value }))}
-                      />
+                  {newInvoice.paymentsList.length > 1 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                      {newInvoice.paymentsList.slice(1).map((pay, idx) => {
+                        const actualIdx = idx + 1;
+                        return (
+                          <div key={actualIdx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap', backgroundColor: 'var(--bg-app)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Clearance Amount (₹)</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                min="0"
+                                value={pay.amount || ''}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  updatePaymentRow(actualIdx, 'amount', val);
+                                }}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 130px' }}>
+                              <label>Payment Date</label>
+                              <input
+                                type="date"
+                                className="form-input"
+                                value={pay.date}
+                                onChange={(e) => updatePaymentRow(actualIdx, 'date', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Method</label>
+                              <select
+                                className="form-select"
+                                value={pay.paymentMethod}
+                                onChange={(e) => updatePaymentRow(actualIdx, 'paymentMethod', e.target.value)}
+                              >
+                                <option value="Cash">Cash Receipt</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Credit Card">Credit Card</option>
+                              </select>
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 140px' }}>
+                              <label>Reference / Memo</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={`e.g. Due clearance #${actualIdx}`}
+                                value={pay.reference || ''}
+                                onChange={(e) => updatePaymentRow(actualIdx, 'reference', e.target.value)}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              style={{ padding: '6px 10px', height: '36px', minWidth: '36px', fontSize: '14px' }}
+                              onClick={() => removePaymentRow(actualIdx)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </>
-                )}
+                  ) : (
+                    <div style={{ padding: '16px', border: '1px dashed var(--border-color)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      No split due clearance payments logged yet. If the passenger splits the due payment, add clearance rows above when they pay.
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Breakdown Card */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'var(--bg-app)', border: '1px dashed var(--border-color)', fontSize: '13px', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Ticket Cost: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(computedTotal)}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Collected: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</strong>
+                  </div>
+                  <div>
+                    {(() => {
+                      const totalCollected = newInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const diff = computedTotal - totalCollected;
+                      if (diff > 0) {
+                        return <span style={{ color: '#d97706', fontWeight: '700', backgroundColor: '#fef3c7', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Unpaid Due: {formatCurr(diff)}</span>;
+                      } else if (diff < 0) {
+                        return <span style={{ color: '#ef4444', fontWeight: '700', backgroundColor: '#fee2e2', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Overallocated: {formatCurr(Math.abs(diff))}</span>;
+                      } else {
+                        return <span style={{ color: '#10b981', fontWeight: '700', backgroundColor: '#d1fae5', padding: '4px 10px', borderRadius: '6px' }}>✓ Fully Paid Off</span>;
+                      }
+                    })()}
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
@@ -864,6 +1147,50 @@ export default function Invoices() {
                   </tr>
                 </tbody>
               </table>
+
+              {/* Payment Log & Actual Remittances */}
+              <div style={{ marginTop: '24px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', borderBottom: '2px solid var(--primary)', paddingBottom: '4px', marginBottom: '8px', margin: 0 }}>
+                  Remittance History & Payment Ledgers
+                </h4>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #cbd5e1', color: '#475569', fontWeight: '700' }}>
+                      <th style={{ padding: '6px 4px' }}>Clearance Date</th>
+                      <th style={{ padding: '6px 4px' }}>Reference / Memo</th>
+                      <th style={{ padding: '6px 4px' }}>Payment Method</th>
+                      <th style={{ padding: '6px 4px', textAlign: 'right' }}>Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const invPayments = payments
+                        .filter(p => p.invoiceId === selectedInvoice.id)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                      if (invPayments.length > 0) {
+                        return invPayments.map((p, idx) => {
+                          return (
+                            <tr key={idx} style={{ borderBottom: '1px dashed #e2e8f0' }}>
+                              <td style={{ padding: '6px 4px', fontFamily: 'monospace', fontWeight: '600' }}>{p.date}</td>
+                              <td style={{ padding: '6px 4px' }}>{p.reference || (idx === 0 ? 'Initial Customer Deposit' : `Due Clearance #${idx}`)}</td>
+                              <td style={{ padding: '6px 4px' }}>{p.paymentMethod}</td>
+                              <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: '700', color: '#10b981' }}>{formatCurr(p.amount)}</td>
+                            </tr>
+                          );
+                        });
+                      } else {
+                        return (
+                          <tr>
+                            <td colSpan="4" style={{ padding: '10px 4px', color: '#64748b', textAlign: 'center' }}>
+                              No remittances or due clearances recorded yet for this voucher.
+                            </td>
+                          </tr>
+                        );
+                      }
+                    })()}
+                  </tbody>
+                </table>
+              </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
                 <div style={{ maxWidth: '350px' }}>
@@ -1118,6 +1445,17 @@ export default function Invoices() {
                     onChange={(e) => setEditingInvoice(prev => ({ ...prev, travelDate: e.target.value }))}
                   />
                 </div>
+
+                <div className="form-group">
+                  <label>Invoice Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    required
+                    value={editingInvoice.createdDate || ''}
+                    onChange={(e) => setEditingInvoice(prev => ({ ...prev, createdDate: e.target.value }))}
+                  />
+                </div>
               </div>
 
               {/* Transit Subcategory Specific Fields */}
@@ -1269,16 +1607,189 @@ export default function Invoices() {
                 </div>
               </div>
 
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Total Customer Paid So Far (₹)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    min="0"
-                    value={editingInvoice.paidAmount || 0}
-                    onChange={(e) => setEditingInvoice(prev => ({ ...prev, paidAmount: Number(e.target.value) }))}
-                  />
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                {/* SECTION 1: Initial Customer Deposit */}
+                <div style={{ backgroundColor: 'rgba(79, 70, 229, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(79, 70, 229, 0.1)', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>💵 Section 1: Initial Customer Deposit (Paid at Ticketing)</span>
+                  </h3>
+                  
+                  {editingInvoice.paymentsList[0] && (
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Deposit Amount (₹)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          min="0"
+                          value={editingInvoice.paymentsList[0].amount || ''}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            updateEditPaymentRow(0, 'amount', val);
+                          }}
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Date</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={editingInvoice.paymentsList[0].date}
+                          onChange={(e) => updateEditPaymentRow(0, 'date', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: '1 1 140px' }}>
+                        <label>Payment Method</label>
+                        <select
+                          className="form-select"
+                          value={editingInvoice.paymentsList[0].paymentMethod}
+                          onChange={(e) => updateEditPaymentRow(0, 'paymentMethod', e.target.value)}
+                        >
+                          <option value="Cash">Cash Receipt</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                          <option value="Credit Card">Credit Card</option>
+                        </select>
+                      </div>
+                      <div className="form-group" style={{ flex: '1 1 180px' }}>
+                        <label>Reference / Memo</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Initial Customer Deposit"
+                          value={editingInvoice.paymentsList[0].reference || ''}
+                          onChange={(e) => updateEditPaymentRow(0, 'reference', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* SECTION 2: Subsequent Due Clearances */}
+                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.01)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>💳 Section 2: Subsequent Due Clearances (Paid Later)</span>
+                    </h3>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '11px', height: '28px', gap: '4px' }}
+                      onClick={() => {
+                        const totalCost = Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0);
+                        const currentAllocated = editingInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const remaining = Math.max(0, totalCost - currentAllocated);
+                        
+                        setEditingInvoice(prev => ({
+                          ...prev,
+                          paymentsList: [
+                            ...prev.paymentsList,
+                            {
+                              amount: remaining,
+                              date: new Date().toISOString().split('T')[0],
+                              paymentMethod: 'Cash',
+                              reference: `Due Clearance #${prev.paymentsList.length}`
+                            }
+                          ]
+                        }));
+                      }}
+                    >
+                      <span>+ Add Due Clearance Row</span>
+                    </button>
+                  </div>
+
+                  {editingInvoice.paymentsList.length > 1 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                      {editingInvoice.paymentsList.slice(1).map((pay, idx) => {
+                        const actualIdx = idx + 1;
+                        return (
+                          <div key={actualIdx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap', backgroundColor: 'var(--bg-app)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Clearance Amount (₹)</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                min="0"
+                                value={pay.amount || ''}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  updateEditPaymentRow(actualIdx, 'amount', val);
+                                }}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 130px' }}>
+                              <label>Payment Date</label>
+                              <input
+                                type="date"
+                                className="form-input"
+                                value={pay.date}
+                                onChange={(e) => updateEditPaymentRow(actualIdx, 'date', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 120px' }}>
+                              <label>Method</label>
+                              <select
+                                className="form-select"
+                                value={pay.paymentMethod}
+                                onChange={(e) => updateEditPaymentRow(actualIdx, 'paymentMethod', e.target.value)}
+                              >
+                                <option value="Cash">Cash Receipt</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Credit Card">Credit Card</option>
+                              </select>
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 140px' }}>
+                              <label>Reference / Memo</label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={`e.g. Due clearance #${actualIdx}`}
+                                value={pay.reference || ''}
+                                onChange={(e) => updateEditPaymentRow(actualIdx, 'reference', e.target.value)}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              style={{ padding: '6px 10px', height: '36px', minWidth: '36px', fontSize: '14px' }}
+                              onClick={() => removeEditPaymentRow(actualIdx)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '16px', border: '1px dashed var(--border-color)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      No split due clearance payments logged yet. If the passenger splits the due payment, add clearance rows above when they pay.
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Breakdown Card */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'var(--bg-app)', border: '1px dashed var(--border-color)', fontSize: '13px', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Ticket Cost: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0))}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Total Collected: </span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '15px' }}>{formatCurr(editingInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</strong>
+                  </div>
+                  <div>
+                    {(() => {
+                      const totalCost = Number(editingInvoice.baseFare || 0) + Number(editingInvoice.serviceCharge || 0) + Number(editingInvoice.taxGst || 0);
+                      const totalCollected = editingInvoice.paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const diff = totalCost - totalCollected;
+                      if (diff > 0) {
+                        return <span style={{ color: '#d97706', fontWeight: '700', backgroundColor: '#fef3c7', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Unpaid Due: {formatCurr(diff)}</span>;
+                      } else if (diff < 0) {
+                        return <span style={{ color: '#ef4444', fontWeight: '700', backgroundColor: '#fee2e2', padding: '4px 10px', borderRadius: '6px' }}>⚠️ Overallocated: {formatCurr(Math.abs(diff))}</span>;
+                      } else {
+                        return <span style={{ color: '#10b981', fontWeight: '700', backgroundColor: '#d1fae5', padding: '4px 10px', borderRadius: '6px' }}>✓ Fully Paid Off</span>;
+                      }
+                    })()}
+                  </div>
                 </div>
               </div>
 

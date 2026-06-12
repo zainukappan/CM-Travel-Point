@@ -944,13 +944,22 @@ button, input, select, textarea {
 }
 
 /* Print View Settings */
+.print-only {
+  display: none !important;
+}
+
 @media print {
   body {
     background-color: white !important;
     color: black !important;
+    font-size: 11px !important;
   }
   
-  .sidebar, .topbar, .page-header-actions, .btn-print-action, .no-print {
+  .print-only {
+    display: block !important;
+  }
+  
+  .sidebar, .topbar, .page-header-actions, .btn-print-action, .no-print, .no-print * {
     display: none !important;
   }
   
@@ -970,6 +979,27 @@ button, input, select, textarea {
     max-width: 100% !important;
   }
   
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .custom-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    color: black !important;
+  }
+
+  .custom-table th, .custom-table td {
+    border: 1px solid #cbd5e1 !important;
+    color: black !important;
+    padding: 8px 10px !important;
+    background: transparent !important;
+  }
+
   .printable-invoice-container {
     border: none !important;
     box-shadow: none !important;

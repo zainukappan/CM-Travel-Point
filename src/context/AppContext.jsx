@@ -398,6 +398,15 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const deleteExpense = async (id) => {
+    try {
+      await fetch(`${API_BASE_URL}/expenses/${id}`, { method: 'DELETE' });
+      setExpenses(prev => prev.filter(exp => exp.id !== id));
+    } catch (err) {
+      console.error('Error deleting expense:', err);
+    }
+  };
+
   const updateUser = async (id, updatedData) => {
     try {
       const res = await fetch(`${API_BASE_URL}/users/${id}`, {
@@ -466,6 +475,15 @@ export const AppProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Error updating user permissions:', err);
+    }
+  };
+
+  const resetDatabase = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/reset`, { method: 'POST' });
+      await refreshData();
+    } catch (err) {
+      console.error('Error resetting database:', err);
     }
   };
 
@@ -552,8 +570,10 @@ export const AppProvider = ({ children }) => {
       deleteVendor,
       addVendorDeposit,
       addExpense,
+      deleteExpense,
       getFinancialStats,
-      updateUser
+      updateUser,
+      resetDatabase
     }}>
       {children}
     </AppContext.Provider>

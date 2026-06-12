@@ -133,7 +133,8 @@ const initializeDatabase = async () => {
         category VARCHAR(50) NOT NULL,
         amount NUMERIC(12, 2) NOT NULL,
         date VARCHAR(20) NOT NULL,
-        description TEXT
+        description TEXT,
+        type VARCHAR(20) DEFAULT 'expense'
       );
     `);
 
@@ -256,16 +257,17 @@ const seedInitialData = async (client) => {
   if (parseInt(expenseCheck.rows[0].count) === 0) {
     console.log('Seeding initial expenses...');
     await client.query(`
-      INSERT INTO expenses (id, category, amount, date, description) VALUES
-      ('EXP-501', 'Rent', 800.00, '2026-05-01', 'Office commercial space rent - Suite 302'),
-      ('EXP-502', 'Salaries', 1200.00, '2026-05-05', 'Lead ticketing executive monthly stipend'),
-      ('EXP-503', 'Utilities', 145.00, '2026-05-10', 'High speed fiber internet & electricity bills'),
-      ('EXP-504', 'Marketing', 150.00, '2026-05-18', 'Social media flyer boosting for Summer vacation tour deals')
+      INSERT INTO expenses (id, category, amount, date, description, type) VALUES
+      ('EXP-501', 'Rent', 800.00, '2026-05-01', 'Office commercial space rent - Suite 302', 'expense'),
+      ('EXP-502', 'Salaries', 1200.00, '2026-05-05', 'Lead ticketing executive monthly stipend', 'expense'),
+      ('EXP-503', 'Utilities', 145.00, '2026-05-10', 'High speed fiber internet & electricity bills', 'expense'),
+      ('EXP-504', 'Marketing', 150.00, '2026-05-18', 'Social media flyer boosting for Summer vacation tour deals', 'expense')
     `);
   }
 };
 
 module.exports = {
   pool,
-  initializeDatabase
+  initializeDatabase,
+  seedInitialData
 };
