@@ -138,6 +138,9 @@ const initializeDatabase = async () => {
       );
     `);
 
+    // Ensure 'type' column is added if the table already existed without it
+    await client.query('ALTER TABLE expenses ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT \'expense\'');
+
     await client.query('COMMIT');
     console.log('Database tables successfully created or already exist.');
 
